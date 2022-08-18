@@ -116,4 +116,4 @@ def set_and_rise(loc, eph, start, end, body):
         elif not yi:
             set = ti
     
-    return(set, rise)
+    return(rise, set)

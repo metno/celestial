@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
-
 import uvicorn
-import ephem
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
@@ -32,30 +30,6 @@ def healthz():
        "Status: Ok<br/>"
        "Description: Tool for meteorologists to store "
        "and create weather alert warnings")
-
-
-
-def banan():
-
-    date = '2018/9/20'
-
-    sun = ephem.Sun()
-    sun.compute(date)
-    fred = ephem.Observer()
-    fred.lon  = str(-66.666667) #Note that lon should be in string format
-    fred.lat  = str(45.95)      #Note that lat should be in string format
-
-    #Elevation of Fredericton, Canada, in metres
-    fred.elev = 20
-
-    #To get U.S. Naval Astronomical Almanac values, use these settings
-    fred.pressure= 0
-    fred.horizon = '-0:34'
-
-    sunrise=fred.previous_rising(sun) #Sunrise
-    print('Sun in', list(ephem.constellation(sun))[1], sunrise)
-    return("a")
-
 
 if __name__ == "__main__":
 
