@@ -1,35 +1,31 @@
 import datetime
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException, Query, Body
 from typing import Optional
 from skyfield import api
 from skyfield import almanac
+from http import HTTPStatus
 router = APIRouter()
 
 
 @router.get("/sunrise")
-def get_sunrise(lat: float,
-                lon: float,
-                date: str,
-                height: Optional[float] = 0):
+def get_sunrise(date: str = Query(None, description="date on format YYYY-DD-MM"),
+                lat: float = Query(default=51.477, ge=-90.0, le = 90.0,
+                                   description="latitude in degrees. Default value set to Greenwich observatory"),
+                lon: float = Query(default= -0.001, ge=-180.0, le = 180.0,
+                                   description="latitude in degrees. Default value set to Greenwich observatory"),
+                utc_offset: str = Query(default="+00:00"),
+                elevation: Optional[float] = Query(default=0,
+                                                  description="elevation above earth ellipsoid")):
     """
     Returns moonrise and sunset for a given
     date and position in lat,lon with optional height
-
-    Arguments
-    ---------
-    lat: float
-        latitude in degrees
-    lon: float
-        longitude in degrees
-    date: str
-        date on format YYYY-DD-MM
     """
     date = datetime.datetime.strptime(date, '%Y-%d-%m')
     next_day = date + datetime.timedelta(days=1)
 
     ts = api.load.timescale()
     eph = api.load('de421.bsp')
-    loc = api.wgs84.latlon(lat, lon)
+    loc = api.wgs84.latlon(lat, lon, elevation_m=elevation)
     # Find sunset and sunrise
     start = ts.utc(date.year, date.month, date.day, 0)
     end = ts.utc(next_day.year, next_day.month, next_day.day, 0)
@@ -38,12 +34,30 @@ def get_sunrise(lat: float,
     moonrise, moonset = set_and_rise(loc, eph, start, end, "Moon")
     solarnoon = meridian_transit(loc, eph, start, end, "Sun")
 
+    # Create datetime object for utcoffset
+    hour_offset = float(utc_offset[1] + utc_offset[2])
+    minute_offset = float(utc_offset[4] + utc_offset[5])
+    delta = datetime.timedelta(hours=hour_offset,
+                               minutes=minute_offset)
+
     data = {}
-    data["sunrise"] = sunrise
-    data["sunset"] = sunset
-    data["moonrise"] = moonrise
-    data["moonset"] = moonset
-    data["solarnoon"] = solarnoon
+    if utc_offset[0] == "+":
+        data["sunrise"] = sunrise + delta
+        data["sunset"] = sunset + delta
+        data["moonrise"] = moonrise + delta
+        data["moonset"] = moonset + delta
+        data["solarnoon"] = solarnoon + delta
+    elif utc_offset[0] == "-":
+        data["sunrise"] = sunrise - delta
+        data["sunset"] = sunset - delta
+        data["moonrise"] = moonrise - delta
+        data["moonset"] = moonset - delta
+        data["solarnoon"] = solarnoon + delta
+    else:
+        raise HTTPException(status_code = HTTPStatus.BAD_REQUEST,
+                            detail="First element of utc_offset "
+                                   "string argument has to be a plus or "
+                                   "minus sign.")
     return(data)
 
 def meridian_transit(loc, eph, start, end, body):
@@ -75,7 +89,8 @@ def meridian_transit(loc, eph, start, end, body):
     times, events = almanac.find_discrete(start, end, f)
     times = times[events == 1]
     t = times[0]
-    return(t.utc_iso())
+    t = t.utc_iso()
+    return(datetime.datetime.strptime(t, "%Y-%m-%dT%H:%M:%SZ"))
 
 def set_and_rise(loc, eph, start, end, body):
     """
@@ -115,5 +130,5 @@ def set_and_rise(loc, eph, start, end, body):
             rise = ti
         elif not yi:
             set = ti
-    
-    return(rise, set)
+    return(datetime.datetime.strptime(rise, "%Y-%m-%dT%H:%M:%SZ"),
+           datetime.datetime.strptime(set, "%Y-%m-%dT%H:%M:%SZ"))

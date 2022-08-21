@@ -1,0 +1,4 @@
+fastapi>=0.73.0
+numpy>=1.19.5
+skyfield>=1.43.1
+uvicorn>=0.16.0

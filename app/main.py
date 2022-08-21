@@ -4,7 +4,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
 from routes.sunrise import router
-from typing import Optional
+from exception_handler import http_exception_handler
+
 app = FastAPI()
 app.include_router(router)
 origins = [
@@ -28,8 +29,10 @@ def healthz():
        "Responsible: haakont<br/>"
        "Depends: api.met.no<br/>"
        "Status: Ok<br/>"
-       "Description: Tool for meteorologists to store "
-       "and create weather alert warnings")
+       "Description: Application for requesting rising and setting of The Sun and Moon.")
+
+app.add_exception_handler(HTTPException,
+                          http_exception_handler)
 
 if __name__ == "__main__":
 
