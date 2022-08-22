@@ -9,9 +9,9 @@ router = APIRouter()
 
 @router.get("/sunrise")
 def get_sunrise(date: str = Query(None, description="date on format YYYY-DD-MM"),
-                lat: float = Query(default=51.477, ge=-90.0, le = 90.0,
+                lat: float = Query(default=51.477, gt=-90.0, lt= 90.0,
                                    description="latitude in degrees. Default value set to Greenwich observatory"),
-                lon: float = Query(default= -0.001, ge=-180.0, le = 180.0,
+                lon: float = Query(default= -0.001, gt=-180.0, lt = 180.0,
                                    description="latitude in degrees. Default value set to Greenwich observatory"),
                 utc_offset: str = Query(default="+00:00"),
                 elevation: Optional[float] = Query(default=0,
