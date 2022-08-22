@@ -21,7 +21,7 @@ def get_sunrise(date: str = Query(None, description="date on format YYYY-DD-MM")
     date and position in lat,lon with optional height
     """
     date = datetime.datetime.strptime(date, '%Y-%d-%m')
-    next_day = date + datetime.timedelta(days=2)
+    next_day = date + datetime.timedelta(days=1)
 
     ts = api.load.timescale()
     eph = api.load('de421.bsp')
@@ -41,17 +41,17 @@ def get_sunrise(date: str = Query(None, description="date on format YYYY-DD-MM")
                                minutes=minute_offset)
     data = {}
     if utc_offset[0] == "+":
-        data["sunrise"] = sunrise + delta
-        data["sunset"] = sunset + delta
-        data["moonrise"] = moonrise + delta
-        data["moonset"] = moonset + delta
-        data["solarnoon"] = solarnoon + delta
+        data["sunrise"] = (sunrise + delta) if sunrise is not None else None
+        data["sunset"] = (sunset + delta) if sunset is not None else None
+        data["moonrise"] = (moonrise + delta) if moonrise is not None else None
+        data["moonset"] = (moonset + delta) if moonset is not None else None
+        data["solarnoon"] = (solarnoon + delta) if solarnoon is not None else None
     elif utc_offset[0] == "-":
-        data["sunrise"] = sunrise - delta
-        data["sunset"] = sunset - delta
-        data["moonrise"] = moonrise - delta
-        data["moonset"] = moonset - delta
-        data["solarnoon"] = solarnoon + delta
+        data["sunrise"] = (sunrise - delta) if sunrise is not None else None
+        data["sunset"] = (sunset - delta) if sunset is not None else None
+        data["moonrise"] = (moonrise - delta) if moonrise is not None else None
+        data["moonset"] = (moonset - delta) if moonset is not None else None
+        data["solarnoon"] = (solarnoon + delta) if solarnoon is not None else None
     else:
         raise HTTPException(status_code = HTTPStatus.BAD_REQUEST,
                             detail="First element of utc_offset "
@@ -130,5 +130,8 @@ def set_and_rise(loc, eph, start, end, body):
             rise = ti
         elif not yi:
             set = ti
-    return(datetime.datetime.strptime(rise, "%Y-%m-%dT%H:%M:%SZ"),
-           datetime.datetime.strptime(set, "%Y-%m-%dT%H:%M:%SZ"))
+    if rise is not None:
+        rise = datetime.datetime.strptime(rise, "%Y-%m-%dT%H:%M:%SZ")
+    if set is not None:
+        set = datetime.datetime.strptime(set, "%Y-%m-%dT%H:%M:%SZ")
+    return(rise, set)
