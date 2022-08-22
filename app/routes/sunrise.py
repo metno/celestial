@@ -21,7 +21,7 @@ def get_sunrise(date: str = Query(None, description="date on format YYYY-DD-MM")
     date and position in lat,lon with optional height
     """
     date = datetime.datetime.strptime(date, '%Y-%d-%m')
-    next_day = date + datetime.timedelta(days=1)
+    next_day = date + datetime.timedelta(days=2)
 
     ts = api.load.timescale()
     eph = api.load('de421.bsp')
@@ -39,7 +39,6 @@ def get_sunrise(date: str = Query(None, description="date on format YYYY-DD-MM")
     minute_offset = float(utc_offset[4] + utc_offset[5])
     delta = datetime.timedelta(hours=hour_offset,
                                minutes=minute_offset)
-
     data = {}
     if utc_offset[0] == "+":
         data["sunrise"] = sunrise + delta
@@ -123,9 +122,10 @@ def set_and_rise(loc, eph, start, end, body):
 
     set = None
     rise = None
-    # Only set if there is 
-    # set and rise, else None 
-    for ti, yi in zip(t,y):
+    # Only use first two elements to account for two day interval
+    # Rising or setting may take place the next day.
+    zip_list = list(zip(t,y))
+    for ti, yi in zip_list[:2]:
         if yi:
             rise = ti
         elif not yi:
