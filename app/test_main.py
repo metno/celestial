@@ -10,7 +10,7 @@ def test_known_date():
     """
     This simple request should never fail
     """
-    response = client.get("/sunrise?date=2022-22-08&lat=51.477&lon=-0.001&utc_offset=%2B00%3A00&elevation=0")
+    response = client.get("/?date=2022-08-22&lat=51.477&lon=-0.001&elevation=0")
     assert response.status_code == HTTPStatus.OK
 
 def test_north_pole():
@@ -25,11 +25,11 @@ def test_north_pole():
     n_sunset = 0
     while start_date <= end_date:
         start_date += delta
-        date = start_date.strftime("%Y-%d-%m")
-        response = client.get(f"/sunrise?date={date}&lat=89.99&lon=0&utc_offset=%2B00%3A00&elevation=0")
+        date = start_date.strftime("%Y-%m-%d")
+        response = client.get(f"/?date={date}&lat=89.9&lon=20&elevation=0")
         response = response.json()
-        sunset = response["sunset"]
-        sunrise = response["sunrise"]
+        sunset = response["time"][0]["sunset"]["time"]
+        sunrise = response["time"][0]["sunrise"]["time"]
         if sunset is not None:
             n_sunset += 1
         if sunrise is not None:

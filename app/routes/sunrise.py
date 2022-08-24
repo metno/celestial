@@ -1,65 +1,118 @@
 import datetime
-from fastapi import APIRouter, HTTPException, Query, Body
+from email.policy import HTTP
+import re
+from fastapi import APIRouter, HTTPException, Query
 from typing import Optional
 from skyfield import api
 from skyfield import almanac
 from http import HTTPStatus
+from timezonefinder import TimezoneFinder
+from pytz import timezone
+
 router = APIRouter()
 
 
-@router.get("/sunrise")
-def get_sunrise(date: str = Query(None, description="date on format YYYY-DD-MM"),
+@router.get("/")
+def get_sunrise(date: str = Query(None, description="date on format YYYY-MM-DD"),
                 lat: float = Query(default=51.477, gt=-90.0, lt= 90.0,
                                    description="latitude in degrees. Default value set to Greenwich observatory"),
                 lon: float = Query(default= -0.001, gt=-180.0, lt = 180.0,
-                                   description="latitude in degrees. Default value set to Greenwich observatory"),
-                utc_offset: str = Query(default="+00:00"),
+                                   description="longitude in degrees. Default value set to Greenwich observatory"),
                 elevation: Optional[float] = Query(default=0,
-                                                  description="elevation above earth ellipsoid")):
+                                                   description="elevation above earth ellipsoid"),
+                days: Optional[int]=Query(default=1,
+                                          description="Number of days to calculate for")):
     """
     Returns moonrise and sunset for a given
-    date and position in lat,lon with optional height
+    date and position in (lat,lon) with optional height
     """
-    date = datetime.datetime.strptime(date, '%Y-%d-%m')
-    next_day = date + datetime.timedelta(days=1)
+    # Regex checking YYYY-MM_DD pattern
+    pattern = re.compile(r"([12]\d{3}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01]))") 
+    if date is None:
+        raise HTTPException(detail="Please enter a value for the date parameter.",
+                            status_code=HTTPStatus.BAD_REQUEST)
+    elif not pattern.match(date):
+        raise HTTPException(detail="Invalid format for parameter date entered. "
+                                   "Has to be on the form YYYY-MM-DD",
+                            status_code=HTTPStatus.BAD_REQUEST)
 
+    date = datetime.datetime.strptime(date, "%Y-%m-%d")
     ts = api.load.timescale()
     eph = api.load('de421.bsp')
     loc = api.wgs84.latlon(lat, lon, elevation_m=elevation)
-    # Find sunset and sunrise
-    start = ts.utc(date.year, date.month, date.day, 0)
-    end = ts.utc(next_day.year, next_day.month, next_day.day, 0)
-    
-    sunrise, sunset = set_and_rise(loc, eph, start, end, "Sun")
-    moonrise, moonset = set_and_rise(loc, eph, start, end, "Moon")
-    solarnoon = meridian_transit(loc, eph, start, end, "Sun")
 
-    # Create datetime object for utcoffset
-    hour_offset = float(utc_offset[1] + utc_offset[2])
-    minute_offset = float(utc_offset[4] + utc_offset[5])
-    delta = datetime.timedelta(hours=hour_offset,
-                               minutes=minute_offset)
+    # Locate time zone of position
+    timezone_obj = TimezoneFinder()
+    timezone_obj = timezone_obj.timezone_at(lng=lon, lat=lat)
+    tz = timezone(timezone_obj)
+
     data = {}
-    if utc_offset[0] == "+":
-        data["sunrise"] = (sunrise + delta) if sunrise is not None else None
-        data["sunset"] = (sunset + delta) if sunset is not None else None
-        data["moonrise"] = (moonrise + delta) if moonrise is not None else None
-        data["moonset"] = (moonset + delta) if moonset is not None else None
-        data["solarnoon"] = (solarnoon + delta) if solarnoon is not None else None
-    elif utc_offset[0] == "-":
-        data["sunrise"] = (sunrise - delta) if sunrise is not None else None
-        data["sunset"] = (sunset - delta) if sunset is not None else None
-        data["moonrise"] = (moonrise - delta) if moonrise is not None else None
-        data["moonset"] = (moonset - delta) if moonset is not None else None
-        data["solarnoon"] = (solarnoon + delta) if solarnoon is not None else None
-    else:
-        raise HTTPException(status_code = HTTPStatus.BAD_REQUEST,
-                            detail="First element of utc_offset "
-                                   "string argument has to be a plus or "
-                                   "minus sign.")
+    data["height"] = str(elevation)
+    data["latitude"] = str(lat)
+    data["longitude"] = str(lon)
+    data["time"] = []
+    for i in range(days):
+        
+        day_i = calculate_one_day(date, ts, eph, loc, tz) 
+        day_i_element = {}
+        day_i_element["date"] = date.strftime("%Y-%m-%d")
+        day_i_element["sunrise"] = {"desc": "LOCAL DIURNAL SUN RISE",
+                                    "time": day_i["sunrise"]}
+        day_i_element["sunset"] = {"desc": "LOCAL DIURNAL SUN SET",
+                                   "time": day_i["sunset"]}
+        day_i_element["moonrise"] = {"desc": "LOCAL DIURNAL MOON RISE",
+                                     "time": day_i["moonset"]}
+        day_i_element["moonset"] = {"desc": "LOCAL DIURNAL MOON SET",
+                                   "time": day_i["moonset"]}
+        day_i_element["solarnoon"] = {"desc": "LOCAL DIURNAL SOLAR NOON",
+                                      "time": day_i["solarnoon"]}
+        data["time"].append(day_i_element)
+        date = date + datetime.timedelta(days=1)
     return(data)
 
-def meridian_transit(loc, eph, start, end, body):
+
+
+def calculate_one_day(date, ts, eph, loc, tz):
+    """
+    Returns moonrise and sunset for a given
+    date and position in lat,lon with optional height
+
+    date: datetime object
+        date to calculate for
+    ts: skyfield.api ts object
+        latitude in degrees.
+    eph: skyfield.api ephemeral object
+        longitutde in degrees
+    loc: skyfield.api.wgs84.latlon object
+        (lat,lon) position on Earth
+    tz: pytz timezone object
+        timezone for a given (lat,lon) position
+    """
+
+
+    next_day = date + datetime.timedelta(days=1)
+
+    # Set start and end time for position
+    start = datetime.datetime(date.year, date.month, date.day)
+    end = datetime.datetime(next_day.year, next_day.month, next_day.day)
+    start = ts.from_datetime(tz.localize(start))
+    end = ts.from_datetime(tz.localize(end))
+
+
+    sunrise, sunset = set_and_rise(loc, eph, start, end, "Sun", tz)
+    moonrise, moonset = set_and_rise(loc, eph, start, end, "Moon", tz)
+    solarnoon = meridian_transit(loc, eph, start, end, "Sun", tz)
+
+    # Construct return dict for current date
+    data = {}
+    data["sunrise"] = sunrise
+    data["sunset"] = sunset
+    data["moonrise"] = moonrise
+    data["moonset"] = moonset
+    data["solarnoon"] = solarnoon
+    return(data)
+
+def meridian_transit(loc, eph, start, end, body, tz):
     """
     Calculates the time at which a body passes a location meridian,
     at which point it reaches its highest elevation in the sky
@@ -88,10 +141,9 @@ def meridian_transit(loc, eph, start, end, body):
     times, events = almanac.find_discrete(start, end, f)
     times = times[events == 1]
     t = times[0]
-    t = t.utc_iso()
-    return(datetime.datetime.strptime(t, "%Y-%m-%dT%H:%M:%SZ"))
+    return(t.astimezone(tz))
 
-def set_and_rise(loc, eph, start, end, body):
+def set_and_rise(loc, eph, start, end, body, tz):
     """
     Calculates rising and setting times for a given
     celestial body as viewed from a location on Earth.
@@ -118,7 +170,7 @@ def set_and_rise(loc, eph, start, end, body):
     # Find set and rise for a celestial body
     f = almanac.risings_and_settings(eph, eph[body], loc)
     t, y = almanac.find_discrete(start, end, f)
-    t = t.utc_iso()
+    t = t.astimezone(tz)
 
     set = None
     rise = None
@@ -130,8 +182,4 @@ def set_and_rise(loc, eph, start, end, body):
             rise = ti
         elif not yi:
             set = ti
-    if rise is not None:
-        rise = datetime.datetime.strptime(rise, "%Y-%m-%dT%H:%M:%SZ")
-    if set is not None:
-        set = datetime.datetime.strptime(set, "%Y-%m-%dT%H:%M:%SZ")
     return(rise, set)
