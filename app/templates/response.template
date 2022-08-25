@@ -2,11 +2,13 @@
   <meta licenseurl="https://api.met.no/license_data.html"/>
     <location latitude={{data.lat}} longitude={{datalon }} height="0">
     {%- for info in data.time %}
+    <time date={{info.date}}>
       <moonrise time={{info.moonrise.time}} desc={{info.moonrise.desc}}/>
       <sunrise time={{info.sunrise.time}} desc={{info.sunrise.desc}}/>
       <moonset time={{info.moonset.time}} desc={{info.moonset.desc}}/>
       <sunset time={{info.sunset.time}} desc={{info.sunset.desc}}/>
       <solarnoon time={{info.solarnoon.time}} desc={{info.solarnoon.desc}}/>
+    </time>
     {%- endfor %}
   </location>
 </astrodata>
