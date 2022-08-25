@@ -21,6 +21,7 @@ The library requirements are as follows
 - uvicorn>=0.16.0
 - timezonefinder>=5.2.0
 - pytz>=2021.3
+
 These are also listed in the `requirements.txt` file.
 Older versions may work, but are not tested.
 
