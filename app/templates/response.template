@@ -1,6 +1,6 @@
 <astrodata xsi:noNamespaceSchemaLocation="http://schema.api.met.no/schemas/astrodata-2.0.xsd">
   <meta licenseurl="https://api.met.no/license_data.html"/>
-    <location latitude={{data.lat}} longitude={{datalon }} height="0">
+    <location latitude={{data.latitude}} longitude={{data.longitude}} height={{data.height}}>
     {%- for info in data.time %}
     <time date={{info.date}}>
       <moonrise time={{info.moonrise.time}} desc={{info.moonrise.desc}}/>
