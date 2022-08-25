@@ -1,27 +1,37 @@
 import datetime
-from email.policy import HTTP
 import re
-from fastapi import APIRouter, HTTPException, Query
+from enum import Enum
+from fastapi import APIRouter, HTTPException, Query, Path
+from fastapi.responses import Response
 from typing import Optional
 from skyfield import api
 from skyfield import almanac
 from http import HTTPStatus
 from timezonefinder import TimezoneFinder
 from pytz import timezone
+from core.make_xml import make_xml
+
 
 router = APIRouter()
 
 
-@router.get("/")
-def get_sunrise(date: str = Query(None, description="date on format YYYY-MM-DD"),
+class format(str, Enum):
+    xml = ".xml"
+    json = ".json"
+
+
+@router.get("/{response_format}")
+def get_sunrise(response_format: Optional[format] = Query(None, description="File format of response."),
+                date: str = Query(None,
+                                  description="date on format YYYY-MM-DD."),
                 lat: float = Query(default=51.477, gt=-90.0, lt= 90.0,
-                                   description="latitude in degrees. Default value set to Greenwich observatory"),
+                                   description="latitude in degrees. Default value set to Greenwich observatory."),
                 lon: float = Query(default= -0.001, gt=-180.0, lt = 180.0,
-                                   description="longitude in degrees. Default value set to Greenwich observatory"),
+                                   description="longitude in degrees. Default value set to Greenwich observatory."),
                 elevation: Optional[float] = Query(default=0,
-                                                   description="elevation above earth ellipsoid"),
+                                                   description="elevation above earth ellipsoid."),
                 days: Optional[int]=Query(default=1,
-                                          description="Number of days to calculate for")):
+                                          description="Number of days to calculate for.")):
     """
     Returns moonrise and sunset for a given
     date and position in (lat,lon) with optional height
@@ -32,8 +42,8 @@ def get_sunrise(date: str = Query(None, description="date on format YYYY-MM-DD")
         raise HTTPException(detail="Please enter a value for the date parameter.",
                             status_code=HTTPStatus.BAD_REQUEST)
     elif not pattern.match(date):
-        raise HTTPException(detail="Invalid format for parameter date entered. "
-                                   "Has to be on the form YYYY-MM-DD",
+        raise HTTPException(detail="Invalid format for date parameter entered. "
+                                   "The date parameter has to be on the form YYYY-MM-DD",
                             status_code=HTTPStatus.BAD_REQUEST)
 
     date = datetime.datetime.strptime(date, "%Y-%m-%d")
@@ -68,7 +78,13 @@ def get_sunrise(date: str = Query(None, description="date on format YYYY-MM-DD")
                                       "time": day_i["solarnoon"]}
         data["time"].append(day_i_element)
         date = date + datetime.timedelta(days=1)
-    return(data)
+    if response_format == format.xml:
+        return(Response(content = make_xml(data), media_type="application/xml"))
+    elif response_format == format.json:
+        return(data)
+    else:
+        raise HTTPException(detail=f"Unknown or not supported format requested: {format}.",
+                            status_code=HTTPStatus.BAD_REQUEST)
 
 
 
