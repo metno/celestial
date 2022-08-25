@@ -11,6 +11,7 @@ This project is currently under development.
 # Getting started
 
 ## Test it out
+Note: The first request each time the application is started in docker may take a few more seconds than normal. This is because the application has to download a table containing positional information for astronomical objects.
 ### Prerequisites
 Sunrise is a python application utilizing the fastapi web framework library.
 The application requires python3>=3.6
