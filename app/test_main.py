@@ -50,10 +50,8 @@ def test_north_pole():
         sunset = response["time"][0]["sunset"]["time"]
         sunrise = response["time"][0]["sunrise"]["time"]
         if sunset is not None:
-            print("sunset: ", date)
             n_sunset += 1
         if sunrise is not None:
-            print("sunrise: ", date)
             n_sunrise +=1
     assert n_sunrise == 1
     assert n_sunset == 1 
