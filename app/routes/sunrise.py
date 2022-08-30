@@ -1,7 +1,8 @@
-import datetime
 import re
+#from numba import njit
+from datetime import datetime, timedelta
 from enum import Enum
-from fastapi import APIRouter, HTTPException, Query, Path
+from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import Response
 from typing import Optional
 from skyfield import api
@@ -10,6 +11,10 @@ from http import HTTPStatus
 from timezonefinder import TimezoneFinder
 from pytz import timezone
 from core.make_xml import make_xml
+
+
+import time
+
 
 
 router = APIRouter()
@@ -21,7 +26,7 @@ class format(str, Enum):
 
 
 @router.get("/{response_format}")
-def get_sunrise(response_format: Optional[format] = Query(None, description="File format of response."),
+async def get_sunrise(response_format: Optional[format] = Query(None, description="File format of response."),
                 date: str = Query(None,
                                   description="date on format YYYY-MM-DD."),
                 lat: float = Query(default=51.477, gt=-90.0, lt= 90.0,
@@ -36,7 +41,7 @@ def get_sunrise(response_format: Optional[format] = Query(None, description="Fil
     Returns moonrise and sunset for a given
     date and position in (lat,lon) with optional height
     """
-    # Regex checking YYYY-MM_DD pattern
+    # Regex checking YYYY-MM-DD pattern
     pattern = re.compile(r"([12]\d{3}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01]))") 
     if date is None:
         raise HTTPException(detail="Please enter a value for the date parameter.",
@@ -46,23 +51,21 @@ def get_sunrise(response_format: Optional[format] = Query(None, description="Fil
                                    "The date parameter has to be on the form YYYY-MM-DD",
                             status_code=HTTPStatus.BAD_REQUEST)
 
-    date = datetime.datetime.strptime(date, "%Y-%m-%d")
+    date = datetime.strptime(date, "%Y-%m-%d")
     ts = api.load.timescale()
-    eph = api.load('de421.bsp')
+    eph = api.load('de440s.bsp')
     loc = api.wgs84.latlon(lat, lon, elevation_m=elevation)
 
-    # Locate time zone of position
     timezone_obj = TimezoneFinder()
     timezone_obj = timezone_obj.timezone_at(lng=lon, lat=lat)
     tz = timezone(timezone_obj)
-
     data = {}
     data["height"] = str(elevation)
     data["latitude"] = str(lat)
     data["longitude"] = str(lon)
     data["time"] = []
+
     for i in range(days):
-        
         day_i = calculate_one_day(date, ts, eph, loc, tz) 
         day_i_element = {}
         day_i_element["date"] = date.strftime("%Y-%m-%d")
@@ -77,7 +80,7 @@ def get_sunrise(response_format: Optional[format] = Query(None, description="Fil
         day_i_element["solarnoon"] = {"desc": "LOCAL DIURNAL SOLAR NOON",
                                       "time": day_i["solarnoon"]}
         data["time"].append(day_i_element)
-        date = date + datetime.timedelta(days=1)
+        date = date + timedelta(days=1)
     if response_format == format.xml:
         return(Response(content = make_xml(data), media_type="application/xml"))
     elif response_format == format.json:
@@ -106,14 +109,13 @@ def calculate_one_day(date, ts, eph, loc, tz):
     """
 
 
-    next_day = date + datetime.timedelta(days=1)
+    next_day = date + timedelta(days=1)
 
     # Set start and end time for position
-    start = datetime.datetime(date.year, date.month, date.day)
-    end = datetime.datetime(next_day.year, next_day.month, next_day.day)
+    start = datetime(date.year, date.month, date.day)
+    end = datetime(next_day.year, next_day.month, next_day.day)
     start = ts.from_datetime(tz.localize(start))
     end = ts.from_datetime(tz.localize(end))
-
 
     sunrise, sunset = set_and_rise(loc, eph, start, end, "Sun", tz)
     moonrise, moonset = set_and_rise(loc, eph, start, end, "Moon", tz)
@@ -127,6 +129,7 @@ def calculate_one_day(date, ts, eph, loc, tz):
     data["moonset"] = moonset
     data["solarnoon"] = solarnoon
     return(data)
+
 
 def meridian_transit(loc, eph, start, end, body, tz):
     """
@@ -190,10 +193,8 @@ def set_and_rise(loc, eph, start, end, body, tz):
 
     set = None
     rise = None
-    # Only use first two elements to account for two day interval
-    # Rising or setting may take place the next day.
     zip_list = list(zip(t,y))
-    for ti, yi in zip_list[:2]:
+    for ti, yi in zip_list:
         if yi:
             rise = ti
         elif not yi:

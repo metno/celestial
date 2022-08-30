@@ -11,7 +11,7 @@ async def http_exception_handler(request, exc):
     This function handles exceptions raised by the application
     of the type HTTPException imported from the fastapi library
     """
-    logging.exception(f"Call to endpoint {request.url.path} "
+    logging.info(f"Call to endpoint {request.url.path} "
                       f"failed with status_code {exc.status_code}")
     return(JSONResponse(str(exc.detail),
                         headers=headers,

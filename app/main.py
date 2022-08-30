@@ -1,10 +1,23 @@
 #!/usr/bin/env python3
 import uvicorn
+import logging
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
 from routes.sunrise import router
 from exception_handler import http_exception_handler
+
+#################################
+# Setting up logging module     #
+#################################
+import logging
+logger = logging.getLogger()
+logging.basicConfig(level=logging.INFO,
+                    filemode="a",
+                    datefmt='%Y-%m-%d %H:%M:%S',
+                    format=" [%(levelname)s] (%(asctime)s) %(message)s",
+                    )
+
 
 app = FastAPI()
 app.include_router(router)
