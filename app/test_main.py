@@ -16,20 +16,20 @@ def test_known_date():
 
     Check that the Sunrise application reproduses this plus minus a few minutes
     """
-    response = client.get("/.json?date=2010-12-24&lat=59.54&lon=10.45&elevation=0")
+    response = client.get("/.json?date=2010-12-24&lat=59.91&lon=10.75&elevation=0")
     response_json = response.json()
     sunset = response_json["time"][0]["sunset"]["time"]
     sunrise = response_json["time"][0]["sunrise"]["time"]
     sunset = parser.parse(sunset)
     sunrise = parser.parse(sunrise)
-    timezone = pytz.timezone("Europe/Oslo")
-    min_tol_sunset = datetime.datetime(2010, 12, 24, 15, 11, 0)
-    max_tol_sunset = datetime.datetime(2010, 12, 24, 15, 17, 0)
-    min_tol_sunrise = datetime.datetime(2010, 12, 24, 9, 16, 0)
-    max_tol_sunrise = datetime.datetime(2010, 12, 24, 9, 23, 0) 
+    tz = pytz.timezone("Europe/Oslo")
+    min_tol_sunset = datetime.datetime(2010, 12, 24, 15, 12, 0)
+    max_tol_sunset = datetime.datetime(2010, 12, 24, 15, 14, 0)
+    min_tol_sunrise = datetime.datetime(2010, 12, 24, 9, 18, 0)
+    max_tol_sunrise = datetime.datetime(2010, 12, 24, 9, 20, 0) 
     assert response.status_code == HTTPStatus.OK
-    assert timezone.localize(min_tol_sunset) < sunset < timezone.localize(max_tol_sunset)
-    assert timezone.localize(min_tol_sunrise) < sunrise < timezone.localize(max_tol_sunrise)
+    assert tz.localize(min_tol_sunset) < sunset < tz.localize(max_tol_sunset)
+    assert tz.localize(min_tol_sunrise) < sunrise< tz.localize(max_tol_sunrise)
     
 def test_north_pole():
     """
@@ -45,13 +45,15 @@ def test_north_pole():
     while start_date <= end_date:
         start_date += delta
         date = start_date.strftime("%Y-%m-%d")
-        response = client.get(f"/.json?date={date}&lat=89.9&lon=20&elevation=0")
+        response = client.get(f"/.json?date={date}&lat=89.99&lon=20&elevation=0")
         response = response.json()
         sunset = response["time"][0]["sunset"]["time"]
         sunrise = response["time"][0]["sunrise"]["time"]
         if sunset is not None:
+            print("sunset: ", date)
             n_sunset += 1
         if sunrise is not None:
+            print("sunrise: ", date)
             n_sunrise +=1
     assert n_sunrise == 1
     assert n_sunset == 1 

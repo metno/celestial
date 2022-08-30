@@ -1,5 +1,4 @@
 import re
-#from numba import njit
 from datetime import datetime, timedelta
 from enum import Enum
 from fastapi import APIRouter, HTTPException, Query
@@ -11,10 +10,6 @@ from http import HTTPStatus
 from timezonefinder import TimezoneFinder
 from pytz import timezone
 from core.make_xml import make_xml
-
-
-import time
-
 
 
 router = APIRouter()
@@ -187,10 +182,13 @@ def set_and_rise(loc, eph, start, end, body, tz):
         to calculate rising and setting times
     """
     # Find set and rise for a celestial body
-    f = almanac.risings_and_settings(eph, eph[body], loc)
+    # Use specially made function if body == Sun
+    if body == "Sun":
+        f = almanac.sunrise_sunset(eph, loc)
+    else:
+        f = almanac.risings_and_settings(eph, eph[body], loc)
     t, y = almanac.find_discrete(start, end, f)
     t = t.astimezone(tz)
-
     set = None
     rise = None
     zip_list = list(zip(t,y))
