@@ -35,7 +35,7 @@ This requires docker-compose. (This is currently only tested on Docker Compose v
 
 ## Documentation
 Api spec for the application is generated and can be viewed on the `/docs` endpoint when running this application. Here it is described how to make http requests to the application.
-For calculating astronomical positions of the Moon and Sun relative to the Earth, the skyfield library ([https://rhodesmill.org/skyfield/](https://rhodesmill.org/skyfield/)) is used. Please refer to
+For calculating the rising and setting times of the Moon and the Sun, the skyfield library ([https://rhodesmill.org/skyfield/](https://rhodesmill.org/skyfield/)) is used. Please refer to
 its documentation when viewing the code for this application.  
 
 # How to contribute
