@@ -11,7 +11,11 @@ from routes.initialize import init_eph
 from core.make_xml import make_xml
 import time
 
+AU_TO_KM = 149597871000 # 1 AU in Km
+
 router = APIRouter()
+
+
 
 
 class format(str, Enum):
@@ -39,10 +43,7 @@ async def get_sunrise(response_format: format = Query(None, description="File fo
     """
     # Regex checking YYYY-MM-DD pattern
     pattern = re.compile(r"([12]\d{3}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01]))") 
-    if date is None:
-        raise HTTPException(detail="Please enter a value for the date parameter.",
-                            status_code=HTTPStatus.BAD_REQUEST)
-    elif not pattern.match(date):
+    if not pattern.match(date):
         raise HTTPException(detail="Invalid format for date parameter entered. "
                                    "The date parameter has to be on the form YYYY-MM-DD",
                             status_code=HTTPStatus.BAD_REQUEST)
@@ -56,7 +57,6 @@ async def get_sunrise(response_format: format = Query(None, description="File fo
     ts = api.load.timescale()
     eph = init_eph()
     loc = api.wgs84.latlon(lat, lon, elevation_m=elevation)
-
     # Parse offset string
     offset_h = int(offset[:3])
     offset_m = int(offset[4:]) 
@@ -80,13 +80,21 @@ async def get_sunrise(response_format: format = Query(None, description="File fo
         day_i_element = {}
         day_i_element["date"] = date.strftime("%Y-%m-%d")
         day_i_element["sunrise"] = {"desc": "LOCAL DIURNAL SUN RISE",
-                                    "time": sunrise}
+                                    "time": sunrise[0],
+                                    "Azimuth:": f"{sunrise[1]}",
+                                    "distance": str(sunrise[2]) + " AU"}
         day_i_element["sunset"] = {"desc": "LOCAL DIURNAL SUN SET",
-                                   "time": sunset}
+                                   "time": sunset[0],
+                                   "Azimuth:": f"{sunset[1]}",
+                                   "distance": str(sunset[2]) + " AU"}
         day_i_element["moonrise"] = {"desc": "LOCAL DIURNAL MOON RISE",
-                                     "time": moonrise}
+                                     "time": moonrise[0],
+                                     "Azimuth:": f"{moonrise[1]}",
+                                     "distance": str(moonrise[2] * AU_TO_KM) + " km"}
         day_i_element["moonset"] = {"desc": "LOCAL DIURNAL MOON SET",
-                                   "time": moonset}
+                                   "time": moonset[0],
+                                   "Azimuth:": f"{moonset[1]}",
+                                   "distance": str(moonset[2] * AU_TO_KM) + " km"}
         day_i_element["solarnoon"] = {"desc": "LOCAL DIURNAL SOLAR NOON",
                                       "time": solarnoon}
         data["time"].append(day_i_element)
@@ -219,13 +227,20 @@ def set_and_rise(loc, eph, start, end, body, offset_h, offset_m):
     else:
         f = almanac.risings_and_settings(eph, eph[body], loc)
     t, y = almanac.find_discrete(start, end, f)
+    astro = (eph["earth"] + loc).at(t).observe(eph[body])
+    app = astro.apparent()
+    alt, az, distance = app.altaz()
+    az = az.dstr()
+    
     t = t.utc_datetime() + timedelta(hours=offset_h, minutes=offset_m)
     set = None
     rise = None
-    zip_list = list(zip(t,y))
-    for ti, yi in zip_list:
+    zip_list = list(zip(t, y, az, distance.au))
+    for ti, yi, az, distance in zip_list:
         if yi:
             rise = ti.strftime("%Y-%m-%dT%H:%M")
+            rise = [rise, az, distance]
         elif not yi:
             set = ti.strftime("%Y-%m-%dT%H:%M")
+            set = [set, az, distance]
     return(rise, set)
