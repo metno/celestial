@@ -20,7 +20,7 @@ class format(str, Enum):
 
 
 @router.get("/{response_format}")
-async def get_sunrise(response_format: Optional[format] = Query(None, description="File format of response."),
+async def get_sunrise(response_format: format = Query(None, description="File format of response."),
                 date: str = Query(None,
                                   description="date on format YYYY-MM-DD."),
                 lat: float = Query(default=51.477, gt=-90.0, lt= 90.0,
@@ -30,7 +30,7 @@ async def get_sunrise(response_format: Optional[format] = Query(None, descriptio
                 elevation: Optional[float] = Query(default=0,
                                                    description="elevation above earth ellipsoid in unit meter."),
                 offset: Optional[str] = Query(default="+00:00",
-                                              description="Offset from utc time. Has to be on format +(-)HH:mm"),
+                                              description="Offset from utc time. Has to be on format +/-HH:MM"),
                 days: Optional[int]=Query(default=1,
                                           description="Number of days to calculate for.")):
     """
@@ -46,7 +46,12 @@ async def get_sunrise(response_format: Optional[format] = Query(None, descriptio
         raise HTTPException(detail="Invalid format for date parameter entered. "
                                    "The date parameter has to be on the form YYYY-MM-DD",
                             status_code=HTTPStatus.BAD_REQUEST)
-
+    # Regex checkign +/-HH:MM offset pattern
+    offset_pattern = re.compile(r"[+-][0-9]{2}:[0-9]{2}\b")
+    if not offset_pattern.match(offset):
+        raise HTTPException(detail="Invalid format for offset parameter entered. "
+                                   "The date parameter has to be on the form +/-HH:MM",
+                            status_code=HTTPStatus.BAD_REQUEST)
     date = datetime.strptime(date, "%Y-%m-%d")
     ts = api.load.timescale()
     eph = init_eph()
@@ -55,12 +60,7 @@ async def get_sunrise(response_format: Optional[format] = Query(None, descriptio
     # Parse offset string
     offset_h = int(offset[:3])
     offset_m = int(offset[4:]) 
-    #print(int(offset[:3]))
-    #print(int(offset[4:]))
 
-    #timezone_obj = TimezoneFinder()
-    #timezone_obj = timezone_obj.timezone_at(lng=lon, lat=lat)
-    #tz = timezone(timezone_obj)
     data = {}
     data["height"] = str(elevation)
     data["latitude"] = str(lat)
@@ -69,7 +69,12 @@ async def get_sunrise(response_format: Optional[format] = Query(None, descriptio
 
     for i in range(days):
         #time_1 = time.time()
-        sunrise, sunset, moonrise, moonset, solarnoon = calculate_one_day(date, ts, eph, loc, offset_h, offset_m)#, tz) 
+        sunrise, sunset, moonrise, moonset, solarnoon = calculate_one_day(date,
+                                                                          ts,
+                                                                          eph,
+                                                                          loc,
+                                                                          offset_h,
+                                                                          offset_m) 
         #total_time = time.time() - time_1
         #print(f"Total time: {total_time}")
         day_i_element = {}
@@ -122,11 +127,15 @@ def calculate_one_day(date, ts, eph, loc, offset_h, offset_m):
     start = ts.utc(date.year, date.month, date.day)
     end = ts.utc(next_day.year, next_day.month, next_day.day)
     if offset_h >= 0:
-        start = ts.utc(start.utc_datetime() + timedelta(hours=offset_h, minutes=offset_m))
-        end = ts.utc(end.utc_datetime() + timedelta(hours=offset_h, minutes=offset_m))
+        start = ts.utc(start.utc_datetime()
+                       + timedelta(hours=offset_h, minutes=offset_m))
+        end = ts.utc(end.utc_datetime()
+                     + timedelta(hours=offset_h, minutes=offset_m))
     else: 
-        start = ts.utc(start.utc_datetime() - timedelta(hours=abs(offset_h), minutes=offset_m))
-        end = ts.utc(end.utc_datetime() - timedelta(hours=offset_h, minutes=offset_m))
+        start = ts.utc(start.utc_datetime()
+                       - timedelta(hours=abs(offset_h), minutes=offset_m))
+        end = ts.utc(end.utc_datetime()
+                     - timedelta(hours=offset_h, minutes=offset_m))
 
     #time_1 = time.time()
     sunrise, sunset = set_and_rise(loc, eph, start, end, "Sun", offset_h, offset_m)
@@ -146,7 +155,7 @@ def calculate_one_day(date, ts, eph, loc, offset_h, offset_m):
     return(sunrise, sunset, moonrise, moonset, solarnoon)
 
 
-def meridian_transit(loc, eph, start, end, body, offset_h, offset_m):#, tz):
+def meridian_transit(loc, eph, start, end, body, offset_h, offset_m):
     """
     Calculates the time at which a body passes a location meridian,
     at which point it reaches its highest elevation in the sky
