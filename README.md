@@ -20,7 +20,6 @@ The library requirements are as follows
 - numpy>=1.19.5
 - skyfield>=1.43.1
 - uvicorn>=0.16.0
-- timezonefinder>=5.2.0
 - pytz>=2021.3
 - lxml>=4.8.0
 - jinja2>=3.0.3

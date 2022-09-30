@@ -16,20 +16,19 @@ def test_known_date():
 
     Check that the Sunrise application reproduses this plus minus a few minutes
     """
-    response = client.get("/.json?date=2010-12-24&lat=59.91&lon=10.75&elevation=0")
+    response = client.get("/.json?offset=+01:00&date=2010-12-24&lat=59.91&lon=10.75&elevation=0")
     response_json = response.json()
     sunset = response_json["time"][0]["sunset"]["time"]
     sunrise = response_json["time"][0]["sunrise"]["time"]
     sunset = parser.parse(sunset)
     sunrise = parser.parse(sunrise)
-    tz = pytz.timezone("Europe/Oslo")
     min_tol_sunset = datetime.datetime(2010, 12, 24, 15, 12, 0)
     max_tol_sunset = datetime.datetime(2010, 12, 24, 15, 14, 0)
     min_tol_sunrise = datetime.datetime(2010, 12, 24, 9, 18, 0)
     max_tol_sunrise = datetime.datetime(2010, 12, 24, 9, 20, 0) 
     assert response.status_code == HTTPStatus.OK
-    assert tz.localize(min_tol_sunset) < sunset < tz.localize(max_tol_sunset)
-    assert tz.localize(min_tol_sunrise) < sunrise< tz.localize(max_tol_sunrise)
+    assert min_tol_sunset < sunset < max_tol_sunset
+    assert min_tol_sunrise < sunrise < max_tol_sunrise
     
 def test_north_pole():
     """

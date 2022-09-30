@@ -7,12 +7,15 @@ from typing import Optional
 from skyfield import api
 from skyfield import almanac
 from http import HTTPStatus
-from timezonefinder import TimezoneFinder
-from pytz import timezone
+from routes.initialize import init_eph
 from core.make_xml import make_xml
+import time
 
+AU_TO_KM = 149597871000 # 1 AU in Km
 
 router = APIRouter()
+
+
 
 
 class format(str, Enum):
@@ -21,7 +24,7 @@ class format(str, Enum):
 
 
 @router.get("/{response_format}")
-async def get_sunrise(response_format: Optional[format] = Query(None, description="File format of response."),
+async def get_sunrise(response_format: format = Query(None, description="File format of response."),
                 date: str = Query(None,
                                   description="date on format YYYY-MM-DD."),
                 lat: float = Query(default=51.477, gt=-90.0, lt= 90.0,
@@ -29,7 +32,9 @@ async def get_sunrise(response_format: Optional[format] = Query(None, descriptio
                 lon: float = Query(default= -0.001, gt=-180.0, lt = 180.0,
                                    description="longitude in degrees. Default value set to Greenwich observatory."),
                 elevation: Optional[float] = Query(default=0,
-                                                   description="elevation above earth ellipsoid."),
+                                                   description="elevation above earth ellipsoid in unit meter."),
+                offset: Optional[str] = Query(default="+00:00",
+                                              description="Offset from utc time. Has to be on format +/-HH:MM"),
                 days: Optional[int]=Query(default=1,
                                           description="Number of days to calculate for.")):
     """
@@ -38,22 +43,24 @@ async def get_sunrise(response_format: Optional[format] = Query(None, descriptio
     """
     # Regex checking YYYY-MM-DD pattern
     pattern = re.compile(r"([12]\d{3}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01]))") 
-    if date is None:
-        raise HTTPException(detail="Please enter a value for the date parameter.",
-                            status_code=HTTPStatus.BAD_REQUEST)
-    elif not pattern.match(date):
+    if not pattern.match(date):
         raise HTTPException(detail="Invalid format for date parameter entered. "
                                    "The date parameter has to be on the form YYYY-MM-DD",
                             status_code=HTTPStatus.BAD_REQUEST)
-
+    # Regex checkign +/-HH:MM offset pattern
+    offset_pattern = re.compile(r"[+-][0-9]{2}:[0-9]{2}\b")
+    if not offset_pattern.match(offset):
+        raise HTTPException(detail="Invalid format for offset parameter entered. "
+                                   "The date parameter has to be on the form +/-HH:MM",
+                            status_code=HTTPStatus.BAD_REQUEST)
     date = datetime.strptime(date, "%Y-%m-%d")
     ts = api.load.timescale()
-    eph = api.load('de440s.bsp')
+    eph = init_eph()
     loc = api.wgs84.latlon(lat, lon, elevation_m=elevation)
+    # Parse offset string
+    offset_h = int(offset[:3])
+    offset_m = int(offset[4:]) 
 
-    timezone_obj = TimezoneFinder()
-    timezone_obj = timezone_obj.timezone_at(lng=lon, lat=lat)
-    tz = timezone(timezone_obj)
     data = {}
     data["height"] = str(elevation)
     data["latitude"] = str(lat)
@@ -61,19 +68,35 @@ async def get_sunrise(response_format: Optional[format] = Query(None, descriptio
     data["time"] = []
 
     for i in range(days):
-        day_i = calculate_one_day(date, ts, eph, loc, tz) 
+        #time_1 = time.time()
+        sunrise, sunset, moonrise, moonset, solarnoon = calculate_one_day(date,
+                                                                          ts,
+                                                                          eph,
+                                                                          loc,
+                                                                          offset_h,
+                                                                          offset_m) 
+        #total_time = time.time() - time_1
+        #print(f"Total time: {total_time}")
         day_i_element = {}
         day_i_element["date"] = date.strftime("%Y-%m-%d")
         day_i_element["sunrise"] = {"desc": "LOCAL DIURNAL SUN RISE",
-                                    "time": day_i["sunrise"]}
+                                    "time": sunrise[0],
+                                    "Azimuth:": f"{sunrise[1]}",
+                                    "distance": str(sunrise[2]) + " AU"}
         day_i_element["sunset"] = {"desc": "LOCAL DIURNAL SUN SET",
-                                   "time": day_i["sunset"]}
+                                   "time": sunset[0],
+                                   "Azimuth:": f"{sunset[1]}",
+                                   "distance": str(sunset[2]) + " AU"}
         day_i_element["moonrise"] = {"desc": "LOCAL DIURNAL MOON RISE",
-                                     "time": day_i["moonset"]}
+                                     "time": moonrise[0],
+                                     "Azimuth:": f"{moonrise[1]}",
+                                     "distance": str(moonrise[2] * AU_TO_KM) + " km"}
         day_i_element["moonset"] = {"desc": "LOCAL DIURNAL MOON SET",
-                                   "time": day_i["moonset"]}
+                                   "time": moonset[0],
+                                   "Azimuth:": f"{moonset[1]}",
+                                   "distance": str(moonset[2] * AU_TO_KM) + " km"}
         day_i_element["solarnoon"] = {"desc": "LOCAL DIURNAL SOLAR NOON",
-                                      "time": day_i["solarnoon"]}
+                                      "time": solarnoon}
         data["time"].append(day_i_element)
         date = date + timedelta(days=1)
     if response_format == format.xml:
@@ -86,7 +109,7 @@ async def get_sunrise(response_format: Optional[format] = Query(None, descriptio
 
 
 
-def calculate_one_day(date, ts, eph, loc, tz):
+def calculate_one_day(date, ts, eph, loc, offset_h, offset_m):
     """
     Returns moonrise and sunset for a given
     date and position in lat,lon with optional height
@@ -101,32 +124,46 @@ def calculate_one_day(date, ts, eph, loc, tz):
         (lat,lon) position on Earth
     tz: pytz timezone object
         timezone for a given (lat,lon) position
+    offset_h: int
+        hours of offset from utc
+    offset_m: int
+        minutes of offset from utc 
     """
-
-
     next_day = date + timedelta(days=1)
 
-    # Set start and end time for position
-    start = datetime(date.year, date.month, date.day)
-    end = datetime(next_day.year, next_day.month, next_day.day)
-    start = ts.from_datetime(tz.localize(start))
-    end = ts.from_datetime(tz.localize(end))
+    # Set start and end time for position with UTC offset
+    start = ts.utc(date.year, date.month, date.day)
+    end = ts.utc(next_day.year, next_day.month, next_day.day)
+    if offset_h >= 0:
+        start = ts.utc(start.utc_datetime()
+                       + timedelta(hours=offset_h, minutes=offset_m))
+        end = ts.utc(end.utc_datetime()
+                     + timedelta(hours=offset_h, minutes=offset_m))
+    else: 
+        start = ts.utc(start.utc_datetime()
+                       - timedelta(hours=abs(offset_h), minutes=offset_m))
+        end = ts.utc(end.utc_datetime()
+                     - timedelta(hours=offset_h, minutes=offset_m))
 
-    sunrise, sunset = set_and_rise(loc, eph, start, end, "Sun", tz)
-    moonrise, moonset = set_and_rise(loc, eph, start, end, "Moon", tz)
-    solarnoon = meridian_transit(loc, eph, start, end, "Sun", tz)
+    #time_1 = time.time()
+    sunrise, sunset = set_and_rise(loc, eph, start, end, "Sun", offset_h, offset_m)
+    #time_2 = time.time()
+    #time_tot_1 = time_2 - time_1
+    #print(f"sunrise and sunset time: {time_tot_1}S")
+    #time_1 = time.time()
+    moonrise, moonset = set_and_rise(loc, eph, start, end, "Moon", offset_h, offset_m)
+    #time_2 = time.time()
+    #time_tot_2 = time_2 - time_1
+    #print(f"moonrise and moonset time: {time_tot_2}S")
+    #time_1 = time.time()
+    solarnoon = meridian_transit(loc, eph, start, end, "Sun", offset_h, offset_m)
+    #time_2 = time.time()
+    #time_tot_3 = time_2 - time_1
+    #print(f"Solarnoon time: {time_tot_3}S")
+    return(sunrise, sunset, moonrise, moonset, solarnoon)
 
-    # Construct return dict for current date
-    data = {}
-    data["sunrise"] = sunrise
-    data["sunset"] = sunset
-    data["moonrise"] = moonrise
-    data["moonset"] = moonset
-    data["solarnoon"] = solarnoon
-    return(data)
 
-
-def meridian_transit(loc, eph, start, end, body, tz):
+def meridian_transit(loc, eph, start, end, body, offset_h, offset_m):
     """
     Calculates the time at which a body passes a location meridian,
     at which point it reaches its highest elevation in the sky
@@ -155,9 +192,10 @@ def meridian_transit(loc, eph, start, end, body, tz):
     times, events = almanac.find_discrete(start, end, f)
     times = times[events == 1]
     t = times[0]
-    return(t.astimezone(tz))
+    t = t.utc_datetime() + timedelta(hours=offset_h, minutes=offset_m)
+    return(t.strftime("%Y-%m-%dT%H:%M"))
 
-def set_and_rise(loc, eph, start, end, body, tz):
+def set_and_rise(loc, eph, start, end, body, offset_h, offset_m):
     """
     Calculates rising and setting times for a given
     celestial body as viewed from a location on Earth.
@@ -183,18 +221,26 @@ def set_and_rise(loc, eph, start, end, body, tz):
     """
     # Find set and rise for a celestial body
     # Use specially made function if body == Sun
+    # For taking into account atmospheric refraction
     if body == "Sun":
         f = almanac.sunrise_sunset(eph, loc)
     else:
         f = almanac.risings_and_settings(eph, eph[body], loc)
     t, y = almanac.find_discrete(start, end, f)
-    t = t.astimezone(tz)
+    astro = (eph["earth"] + loc).at(t).observe(eph[body])
+    app = astro.apparent()
+    alt, az, distance = app.altaz()
+    az = az.dstr()
+    
+    t = t.utc_datetime() + timedelta(hours=offset_h, minutes=offset_m)
     set = None
     rise = None
-    zip_list = list(zip(t,y))
-    for ti, yi in zip_list:
+    zip_list = list(zip(t, y, az, distance.au))
+    for ti, yi, az, distance in zip_list:
         if yi:
-            rise = ti
+            rise = ti.strftime("%Y-%m-%dT%H:%M")
+            rise = [rise, az, distance]
         elif not yi:
-            set = ti
+            set = ti.strftime("%Y-%m-%dT%H:%M")
+            set = [set, az, distance]
     return(rise, set)
