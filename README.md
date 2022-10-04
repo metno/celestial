@@ -1,5 +1,5 @@
 # What is Sunrise?
-Sunrise is a small application for calculating the astronomical phenomena such the rising and setting of the moon.
+Sunrise is a small application for calculating the astronomical phenomena such the rising and setting of The Sun and The Moon.
 The purpose of this project is to provide an endpoint for delivering information of said phenomenas to end users such as yr.no.
 
 ## Who is responsible?
