@@ -11,10 +11,10 @@ stages:
     - k8s-root
   script:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker build -t ${REGISTRY_IMAGE}:${CI_COMMIT_TAG} -f ${DOCKERFILE} ${BUILD_CONTEXT_DIR}
+    - docker build -t ${REGISTRY_IMAGE}:${CI_COMMIT_SHA} -f ${DOCKERFILE} ${BUILD_CONTEXT_DIR}
     - docker push ${REGISTRY_IMAGE}:${CI_COMMIT_SHA}
     - mkdir .images
-    - echo "${REGISTRY_IMAGE}:${CI_COMMIT_TAG}" > .images/${CI_JOB_NAME}
+    - echo "${REGISTRY_IMAGE}:${CI_COMMIT_SHA}" > .images/${CI_JOB_NAME}
   artifacts:
     paths:
       - .images/${CI_JOB_NAME}
