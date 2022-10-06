@@ -3,9 +3,11 @@ import uvicorn
 import logging
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, HTTPException
+from fastapi.openapi.utils import get_openapi
 from fastapi.responses import HTMLResponse
 from routes.sunrise import router
 from exception_handler import http_exception_handler
+
 
 #################################
 # Setting up logging module     #
@@ -19,7 +21,7 @@ logging.basicConfig(level=logging.INFO,
                     )
 
 
-app = FastAPI()
+app = FastAPI(docs_url="/v3/docs")
 app.include_router(router)
 origins = [
     "https://api.met.no/",
@@ -32,6 +34,8 @@ app.add_middleware(
         allow_methods=["*"],
         allow_headers=["*"]
     )
+
+
 
 @app.get("/healthz",
          response_class=HTMLResponse)
@@ -46,6 +50,7 @@ def healthz():
 
 app.add_exception_handler(HTTPException,
                           http_exception_handler)
+
 
 if __name__ == "__main__":
 
