@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 import uvicorn
 import logging
 from fastapi.middleware.cors import CORSMiddleware
@@ -40,12 +41,12 @@ app.add_middleware(
          response_class=HTMLResponse)
 def healthz():
     return("System: Sunrise<br/>"
-       "Service: Sunrise<br/>"
-       "Version: dev<br/>"
-       "Responsible: haakont<br/>"
-       "Depends: api.met.no<br/>"
-       "Status: Ok<br/>"
-       "Description: Application for requesting rising and setting of The Sun and Moon.")
+           "Service: Sunrise<br/>"
+           "Version: dev<br/>"
+           "Responsible: haakont<br/>"
+           "Depends: api.met.no<br/>"
+           "Status: Ok<br/>"
+           "Description: Application for requesting rising and setting of The Sun and Moon.")
 
 app.add_exception_handler(HTTPException,
                           http_exception_handler)
