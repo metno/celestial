@@ -13,14 +13,14 @@ import time
 
 AU_TO_KM = 149597871000 # 1 AU in Km
 
-router = APIRouter()
+router = APIRouter(prefix="/v3")
 
 
 
 
 class format(str, Enum):
-    xml = ".xml"
     json = ".json"
+    xml = ".xml"
 
 
 @router.get("/{response_format}")
