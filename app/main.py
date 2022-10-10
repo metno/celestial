@@ -22,9 +22,7 @@ logging.basicConfig(level=logging.INFO,
                     )
 
 
-app = FastAPI(docs_url="/v3/docs",
-              openapi_url="/v3/openapi.json",
-              root_path="/v3")
+app = FastAPI(openapi_url="/v3/openapi.json")
 
 app.include_router(router)
 origins = [
