@@ -227,15 +227,19 @@ def set_and_rise(loc, eph, start, end, body, offset_h, offset_m):
     else:
         f = almanac.risings_and_settings(eph, eph[body], loc)
     t, y = almanac.find_discrete(start, end, f)
-    astro = (eph["earth"] + loc).at(t).observe(eph[body])
-    app = astro.apparent()
-    alt, az, distance = app.altaz()
-    az = az.dstr()
-    
+    if len(y) > 0:
+        astro = (eph["earth"] + loc).at(t).observe(eph[body])
+        app = astro.apparent()
+        alt, az, distance = app.altaz()
+        distance = distance.au
+        az = az.dstr()
+    else:
+        az, distance = [None, None], [None, None]
+
     t = t.utc_datetime() + timedelta(hours=offset_h, minutes=offset_m)
     set = [None, None, None]
     rise = [None, None, None]
-    zip_list = list(zip(t, y, az, distance.au))
+    zip_list = list(zip(t, y, az, distance))
     for ti, yi, az, distance in zip_list:
         if yi:
             rise = ti.strftime("%Y-%m-%dT%H:%M")
