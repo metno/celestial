@@ -82,19 +82,19 @@ async def get_sunrise(response_format: format = Query(None, description="File fo
         day_i_element["sunrise"] = {"desc": "LOCAL DIURNAL SUN RISE",
                                     "time": sunrise[0],
                                     "Azimuth:": f"{sunrise[1]}",
-                                    "distance": str(sunrise[2]) + " AU"}
+                                    "distance": sunrise[2]}
         day_i_element["sunset"] = {"desc": "LOCAL DIURNAL SUN SET",
                                    "time": sunset[0],
                                    "Azimuth:": f"{sunset[1]}",
-                                   "distance": str(sunset[2]) + " AU"}
+                                   "distance": sunset[2]}
         day_i_element["moonrise"] = {"desc": "LOCAL DIURNAL MOON RISE",
                                      "time": moonrise[0],
                                      "Azimuth:": f"{moonrise[1]}",
-                                     "distance": str(moonrise[2] * AU_TO_KM) + " km"}
+                                     "distance": moonrise[2]}
         day_i_element["moonset"] = {"desc": "LOCAL DIURNAL MOON SET",
                                    "time": moonset[0],
-                                   "Azimuth:": f"{moonset[1]}",
-                                   "distance": str(moonset[2] * AU_TO_KM) + " km"}
+                                   "Azimuth:": {moonset[1]},
+                                   "distance": moonset[2]}
         day_i_element["solarnoon"] = {"desc": "LOCAL DIURNAL SOLAR NOON",
                                       "time": solarnoon}
         data["time"].append(day_i_element)
@@ -221,7 +221,7 @@ def set_and_rise(loc, eph, start, end, body, offset_h, offset_m):
     """
     # Find set and rise for a celestial body
     # Use specially made function if body == Sun
-    # For taking into account atmospheric refraction
+    # For taking into account atmospheric refraction and sun diameter
     if body == "Sun":
         f = almanac.sunrise_sunset(eph, loc)
     else:
@@ -233,14 +233,14 @@ def set_and_rise(loc, eph, start, end, body, offset_h, offset_m):
     az = az.dstr()
     
     t = t.utc_datetime() + timedelta(hours=offset_h, minutes=offset_m)
-    set = None
-    rise = None
+    set = [None, None, None]
+    rise = [None, None, None]
     zip_list = list(zip(t, y, az, distance.au))
     for ti, yi, az, distance in zip_list:
         if yi:
             rise = ti.strftime("%Y-%m-%dT%H:%M")
-            rise = [rise, az, distance]
+            rise = [rise, az, str(distance * AU_TO_KM) + " km"]
         elif not yi:
             set = ti.strftime("%Y-%m-%dT%H:%M")
-            set = [set, az, distance]
+            set = [set, az, str(distance * AU_TO_KM) + " km"]
     return(rise, set)

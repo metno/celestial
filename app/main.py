@@ -3,7 +3,6 @@ import uvicorn
 import logging
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, HTTPException
-from fastapi.openapi.utils import get_openapi
 from fastapi.responses import HTMLResponse
 from routes.sunrise import router
 from exception_handler import http_exception_handler
