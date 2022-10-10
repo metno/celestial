@@ -6,6 +6,6 @@ from fastapi import APIRouter
 
 from routes import sunrise, initialize
 
-routes = APIRouter()
+routes = APIRouter(prefix="/v3")
 routes.include_router(sunrise.router)
 routes.include_router(initialize.router)

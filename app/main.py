@@ -40,7 +40,7 @@ app.add_middleware(
 
 
 
-@app.get("/healthz",
+@app.get("/v3/healthz",
          response_class=HTMLResponse)
 def healthz():
     return("System: Sunrise<br/>"
