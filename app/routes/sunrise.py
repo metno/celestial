@@ -81,11 +81,11 @@ async def get_sunrise(response_format: format = Query(None, description="File fo
         day_i_element["date"] = date.strftime("%Y-%m-%d")
         day_i_element["sunrise"] = {"desc": "LOCAL DIURNAL SUN RISE",
                                     "time": sunrise[0],
-                                    "Azimuth:": f"{sunrise[1]}",
+                                    "Azimuth:": sunrise[1],
                                     "distance": sunrise[2]}
         day_i_element["sunset"] = {"desc": "LOCAL DIURNAL SUN SET",
                                    "time": sunset[0],
-                                   "Azimuth:": f"{sunset[1]}",
+                                   "Azimuth:": sunset[1],
                                    "distance": sunset[2]}
         day_i_element["moonrise"] = {"desc": "LOCAL DIURNAL MOON RISE",
                                      "time": moonrise[0],
@@ -93,7 +93,7 @@ async def get_sunrise(response_format: format = Query(None, description="File fo
                                      "distance": moonrise[2]}
         day_i_element["moonset"] = {"desc": "LOCAL DIURNAL MOON SET",
                                    "time": moonset[0],
-                                   "Azimuth:": {moonset[1]},
+                                   "Azimuth:": moonset[1],
                                    "distance": moonset[2]}
         day_i_element["solarnoon"] = {"desc": "LOCAL DIURNAL SOLAR NOON",
                                       "time": solarnoon}
