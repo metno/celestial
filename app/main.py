@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from sys import prefix
 import uvicorn
 import logging
 from fastapi.middleware.cors import CORSMiddleware
@@ -21,7 +22,10 @@ logging.basicConfig(level=logging.INFO,
                     )
 
 
-app = FastAPI(docs_url="/v3/docs")
+app = FastAPI(docs_url="/v3/docs",
+              openapi_url="/v3/openapi.json",
+              root_path="/v3")
+
 app.include_router(router)
 origins = [
     "https://api.met.no/",
