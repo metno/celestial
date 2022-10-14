@@ -1,25 +1,18 @@
 #!/usr/bin/env python3
 
-from sys import prefix
 import uvicorn
 import logging
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.responses import HTMLResponse
 from routes.sunrise import router
 from exception_handler import http_exception_handler
-
+from time import perf_counter
 
 #################################
 # Setting up logging module     #
 #################################
 import logging
-logger = logging.getLogger()
-logging.basicConfig(level=logging.INFO,
-                    filemode="a",
-                    datefmt='%Y-%m-%d %H:%M:%S',
-                    format=" [%(levelname)s] (%(asctime)s) %(message)s",
-                    )
 
 
 app = FastAPI(openapi_url="/v3/openapi.json",
@@ -37,8 +30,24 @@ app.add_middleware(
         allow_methods=["*"],
         allow_headers=["*"]
     )
+logger = logging.getLogger("uvicorn.access")
 
+@app.on_event("startup")
+async def startup_event():
+    console_formatter = uvicorn.logging.ColourizedFormatter(
+        "{levelprefix} ({asctime}) : {message}","%Y-%m-%d %H:%M:%S",
+        style="{", use_colors=True,
+        )
+    logger.handlers[0].setFormatter(console_formatter)
 
+@app.middleware("http")
+async def add_process_time_header(request: Request,
+                                  call_next):
+    start_time = perf_counter()
+    response = await call_next(request)
+    process_time = perf_counter() - start_time
+    logger.info(f"response-time: {round(process_time, 4)}s")
+    return(response)
 
 @app.get("/v3/healthz",
          response_class=HTMLResponse)
