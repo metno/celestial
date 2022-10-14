@@ -15,13 +15,9 @@ AU_TO_KM = 149597871000 # 1 AU in Km
 
 router = APIRouter(prefix="/v3")
 
-
-
-
 class format(str, Enum):
     json = ".json"
     xml = ".xml"
-
 
 @router.get("/{response_format}")
 async def get_sunrise(response_format: format = Query(None, description="File format of response."),
@@ -53,7 +49,7 @@ async def get_sunrise(response_format: format = Query(None, description="File fo
         raise HTTPException(detail="Invalid format for offset parameter entered. "
                                    "The date parameter has to be on the form +/-HH:MM",
                             status_code=HTTPStatus.BAD_REQUEST)
-    date = datetime.strptime(date, "%Y-%m-%d")
+    datetime_date = datetime.strptime(date, "%Y-%m-%d")
     ts = api.load.timescale()
     eph = init_eph()
     loc = api.wgs84.latlon(lat, lon, elevation_m=elevation)
@@ -66,19 +62,19 @@ async def get_sunrise(response_format: format = Query(None, description="File fo
     data["latitude"] = str(lat)
     data["longitude"] = str(lon)
     data["time"] = []
-
+    
     for i in range(days):
         #time_1 = time.time()
-        sunrise, sunset, moonrise, moonset, solarnoon = calculate_one_day(date,
-                                                                          ts,
-                                                                          eph,
-                                                                          loc,
-                                                                          offset_h,
-                                                                          offset_m) 
+        sunrise, sunset, moonrise, moonset, solarnoon, moonphase = calculate_one_day(datetime_date,
+                                                                                     ts,
+                                                                                     eph,
+                                                                                     loc,
+                                                                                     offset_h,
+                                                                                     offset_m) 
         #total_time = time.time() - time_1
         #print(f"Total time: {total_time}")
         day_i_element = {}
-        day_i_element["date"] = date.strftime("%Y-%m-%d")
+        day_i_element["date"] = datetime_date.strftime("%Y-%m-%d")
         day_i_element["sunrise"] = {"desc": "LOCAL DIURNAL SUN RISE",
                                     "time": sunrise[0],
                                     "Azimuth:": sunrise[1],
@@ -95,10 +91,15 @@ async def get_sunrise(response_format: format = Query(None, description="File fo
                                    "time": moonset[0],
                                    "Azimuth:": moonset[1],
                                    "distance": moonset[2]}
-        day_i_element["solarnoon"] = {"desc": "LOCAL DIURNAL SOLAR NOON",
-                                      "time": solarnoon}
+        day_i_element["moonphase"] = {"desc": "Moonphase",
+                                      "time" : date + "T00:00:00" + offset,
+                                      "value": moonphase.degrees}
+        day_i_element["solarnoon"] = {"desc": "SOLAR MERIDIAN CROSSING",
+                                      "time": solarnoon[0]}
+        day_i_element["solarmidnight"] = {"desc": "SOLAR ANTIMERIDIAN CROSSING",
+                                          "time": solarnoon[1]}
         data["time"].append(day_i_element)
-        date = date + timedelta(days=1)
+        datetime_date = datetime_date + timedelta(days=1)
     if response_format == format.xml:
         return(Response(content = make_xml(data), media_type="application/xml"))
     elif response_format == format.json:
@@ -148,19 +149,24 @@ def calculate_one_day(date, ts, eph, loc, offset_h, offset_m):
     #time_1 = time.time()
     sunrise, sunset = set_and_rise(loc, eph, start, end, "Sun", offset_h, offset_m)
     #time_2 = time.time()
-    #time_tot_1 = time_2 - time_1
-    #print(f"sunrise and sunset time: {time_tot_1}S")
+    #time_tot_1 = (time_2 - time_1) * 1000
+    #print(f"sunrise and sunset time: {time_tot_1} ms")
     #time_1 = time.time()
     moonrise, moonset = set_and_rise(loc, eph, start, end, "Moon", offset_h, offset_m)
     #time_2 = time.time()
-    #time_tot_2 = time_2 - time_1
-    #print(f"moonrise and moonset time: {time_tot_2}S")
+    #time_tot_2 = (time_2 - time_1) * 1000
+    #print(f"moonrise and moonset time: {time_tot_2} ms")
     #time_1 = time.time()
     solarnoon = meridian_transit(loc, eph, start, end, "Sun", offset_h, offset_m)
     #time_2 = time.time()
-    #time_tot_3 = time_2 - time_1
-    #print(f"Solarnoon time: {time_tot_3}S")
-    return(sunrise, sunset, moonrise, moonset, solarnoon)
+    ##time_tot_3 = (time_2 - time_1) * 1000
+    ##print(f"Solarnoon time: {time_tot_3} ms")
+    #time_1 = time.time()
+    moonphase = almanac.moon_phase(eph, start)
+    #time_2 = time.time()
+    #time_tot_3 = (time_2 - time_1) * 1000
+    #print(f"moonphase time: {time_tot_3} ms")
+    return(sunrise, sunset, moonrise, moonset, solarnoon, moonphase)
 
 
 def meridian_transit(loc, eph, start, end, body, offset_h, offset_m):
@@ -190,10 +196,14 @@ def meridian_transit(loc, eph, start, end, body, offset_h, offset_m):
     f = almanac.meridian_transits(eph, eph[body], loc)
     
     times, events = almanac.find_discrete(start, end, f)
-    times = times[events == 1]
-    t = times[0]
-    t = t.utc_datetime() + timedelta(hours=offset_h, minutes=offset_m)
-    return(t.strftime("%Y-%m-%dT%H:%M"))
+    #print(times)
+    antimeridian = times[events==0]
+    meridian = times[events == 1]
+    meridian = times[0]
+    antimeridian = antimeridian[0]
+    antimeridian = antimeridian.utc_datetime() + timedelta(hours=offset_h, minutes=offset_m)
+    meridian = meridian.utc_datetime() + timedelta(hours=offset_h, minutes=offset_m)
+    return(meridian.strftime("%Y-%m-%dT%H:%M"), antimeridian.strftime("%Y-%m-%dT%H:%M"))
 
 def set_and_rise(loc, eph, start, end, body, offset_h, offset_m):
     """
