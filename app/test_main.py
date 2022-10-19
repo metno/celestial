@@ -16,7 +16,7 @@ def test_known_date():
 
     Check that the Sunrise application reproduses this plus minus a few minutes
     """
-    response = client.get("/.json?offset=+01:00&date=2010-12-24&lat=59.91&lon=10.75&elevation=0")
+    response = client.get("/v3/.json?offset=%2B01%3A00&date=2010-12-24&lat=59.91&lon=10.75&elevation=0")
     response_json = response.json()
     sunset = response_json["time"][0]["sunset"]["time"]
     sunrise = response_json["time"][0]["sunrise"]["time"]
@@ -44,7 +44,7 @@ def test_north_pole():
     while start_date <= end_date:
         start_date += delta
         date = start_date.strftime("%Y-%m-%d")
-        response = client.get(f"/.json?date={date}&lat=89.99&lon=20&elevation=0")
+        response = client.get(f"/v3/.json?date={date}&lat=89.99&lon=20&elevation=0")
         response = response.json()
         sunset = response["time"][0]["sunset"]["time"]
         sunrise = response["time"][0]["sunrise"]["time"]
