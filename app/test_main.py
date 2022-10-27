@@ -51,7 +51,7 @@ def test_north_pole():
         if sunset is not None:
             n_sunset += 1
         if sunrise is not None:
-            n_sunrise +=1
+            n_sunrise +=1    
     assert n_sunrise == 1
     assert n_sunset == 1 
-        
+

@@ -57,11 +57,11 @@ async def get_sunrise(response_format: format = Query(None, description="File fo
     # Parse offset string
     offset_h = int(offset[:3])
     offset_m = int(offset[4:])
+    # Make sure minutes is also negative if offset_h is negative
     if offset_h < 0:
         offset_m = -offset_m
+    # Offset in solar time. Not "political" Timezone
     delta_offset = - lon / 15
-    # hours = 
-    # mins = 
     data = {}
     data["height"] = str(elevation)
     data["latitude"] = str(lat)
@@ -139,8 +139,8 @@ def calculate_one_day(date, ts, eph, loc, offset_h, offset_m, delta_offset):
     start = ts.utc(date.year, date.month, date.day)
     
     start = ts.utc(start.utc_datetime() + timedelta(hours=delta_offset))
-    end = ts.utc(start.utc_datetime() + timedelta(days=1))
-    print(start.utc_datetime().strftime("%Y-%m-%dT%H:%M"), " - ", end.utc_datetime().strftime("%Y-%m-%dT%H:%M"))
+    end = ts.utc(start.utc_datetime() + timedelta(days=1, minutes=1))
+    #print(start.utc_datetime().strftime("%Y-%m-%dT%H:%M"), " - ", end.utc_datetime().strftime("%Y-%m-%dT%H:%M"))
     #time_1 = time.time()
     sunrise, sunset = set_and_rise(loc, eph, start, end, "Sun", offset_h, offset_m)
     #time_2 = time.time()
@@ -248,13 +248,12 @@ def set_and_rise(loc, eph, start, end, body, offset_h, offset_m):
     rise = [None, None, None]
     zip_list = list(zip(t, y, az, distance))
     for ti, yi, az, distance in zip_list:
-        
         if yi:
-            print(body, " rise at:", ti.strftime("%Y-%m-%dT%H:%M"))
+            #print(body, " rise at:", ti.strftime("%Y-%m-%dT%H:%M"))
             rise = ti.strftime("%Y-%m-%dT%H:%M")
             rise = [rise, az, str(distance * AU_TO_KM) + " km"]
         elif not yi:
-            print(body, " set at:", ti.strftime("%Y-%m-%dT%H:%M"))
+            #print(body, " set at:", ti.strftime("%Y-%m-%dT%H:%M"))
             set = ti.strftime("%Y-%m-%dT%H:%M")
             set = [set, az, str(distance * AU_TO_KM) + " km"]
     return(rise, set)
