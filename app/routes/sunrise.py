@@ -59,7 +59,7 @@ async def get_sunrise(response_format: format = Query(None, description="File fo
     offset_m = int(offset[4:])
     if offset_h < 0:
         offset_m = -offset_m
-    delta_offset =  lon / 15
+    delta_offset = - lon / 15
     # hours = 
     # mins = 
     data = {}
@@ -128,8 +128,6 @@ def calculate_one_day(date, ts, eph, loc, offset_h, offset_m, delta_offset):
         longitutde in degrees
     loc: skyfield.api.wgs84.latlon object
         (lat,lon) position on Earth
-    tz: pytz timezone object
-        timezone for a given (lat,lon) position
     offset_h: int
         hours of offset from utc
     offset_m: int
@@ -139,10 +137,10 @@ def calculate_one_day(date, ts, eph, loc, offset_h, offset_m, delta_offset):
 
     # Set start and end time for position with UTC offset
     start = ts.utc(date.year, date.month, date.day)
-    end = ts.utc(next_day.year, next_day.month, next_day.day)
+    
     start = ts.utc(start.utc_datetime() + timedelta(hours=delta_offset))
-    end = ts.utc(end.utc_datetime() + timedelta(hours=delta_offset))
-
+    end = ts.utc(start.utc_datetime() + timedelta(days=1))
+    print(start.utc_datetime().strftime("%Y-%m-%dT%H:%M"), " - ", end.utc_datetime().strftime("%Y-%m-%dT%H:%M"))
     #time_1 = time.time()
     sunrise, sunset = set_and_rise(loc, eph, start, end, "Sun", offset_h, offset_m)
     #time_2 = time.time()
@@ -193,7 +191,6 @@ def meridian_transit(loc, eph, start, end, body, offset_h, offset_m):
     f = almanac.meridian_transits(eph, eph[body], loc)
     
     times, events = almanac.find_discrete(start, end, f)
-    #print(times)
     astro = (eph["earth"] + loc).at(times).observe(eph[body])
     app = astro.apparent()
     alt = app.altaz()[0]
@@ -251,10 +248,13 @@ def set_and_rise(loc, eph, start, end, body, offset_h, offset_m):
     rise = [None, None, None]
     zip_list = list(zip(t, y, az, distance))
     for ti, yi, az, distance in zip_list:
+        
         if yi:
+            print(body, " rise at:", ti.strftime("%Y-%m-%dT%H:%M"))
             rise = ti.strftime("%Y-%m-%dT%H:%M")
             rise = [rise, az, str(distance * AU_TO_KM) + " km"]
         elif not yi:
+            print(body, " set at:", ti.strftime("%Y-%m-%dT%H:%M"))
             set = ti.strftime("%Y-%m-%dT%H:%M")
             set = [set, az, str(distance * AU_TO_KM) + " km"]
     return(rise, set)
