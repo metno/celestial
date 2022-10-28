@@ -19,7 +19,7 @@ class format(str, Enum):
     json = ".json"
     xml = ".xml"
 
-@router.get("/{response_format}")
+@router.get("/events/{response_format}")
 async def get_sunrise(response_format: format = Query(None, description="File format of response."),
                 date: str = Query(None,
                                   description="date on format YYYY-MM-DD."),
@@ -131,9 +131,10 @@ def calculate_one_day(date, ts, eph, loc, offset_h, offset_m, delta_offset):
     offset_h: int
         hours of offset from utc
     offset_m: int
-        minutes of offset from utc 
+        minutes of offset from utc
+    delta_offset: float
+        offset from utc in solar time (lon/15)
     """
-    next_day = date + timedelta(days=1)
 
     # Set start and end time for position with UTC offset
     start = ts.utc(date.year, date.month, date.day)
@@ -224,6 +225,10 @@ def set_and_rise(loc, eph, start, end, body, offset_h, offset_m):
     body: str
         Name of celestial object in which
         to calculate rising and setting times
+    offset_h: int
+        hours of offset from utc
+    offset_m: int
+        minutes of offset from utc
     """
     # Find set and rise for a celestial body
     # Use specially made function if body == Sun
