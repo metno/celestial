@@ -1,8 +1,4 @@
-FROM ubuntu:jammy
-
-RUN apt-get update -y && \
-    apt-get install -y python3-pip python3-dev python3
-
+FROM python:3.11
 
 COPY requirements.txt /app/requirements.txt
 COPY ./app /app
