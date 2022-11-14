@@ -15,8 +15,8 @@ from time import perf_counter
 import logging
 
 
-app = FastAPI(openapi_url="/v3/openapi.json",
-              docs_url="/v3/docs")
+app = FastAPI(openapi_url="/openapi.json",
+              docs_url="/docs")
 
 app.include_router(router)
 origins = [
@@ -49,13 +49,13 @@ async def add_process_time_header(request: Request,
     logger.info(f"response-time: {round(process_time, 4)}s")
     return(response)
 
-@app.get("/v3/healthz",
+@app.get("/healthz",
          response_class=HTMLResponse)
 def healthz():
     return("System: Sunrise<br/>"
            "Service: Sunrise<br/>"
            "Version: dev<br/>"
-           "Responsible: haakont<br/>"
+           "Responsible: haakont, mateuszmr<br/>"
            "Depends: api.met.no<br/>"
            "Status: Ok<br/>"
            "Description: Application for requesting rising and setting of The Sun and Moon.")

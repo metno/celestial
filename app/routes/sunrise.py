@@ -13,7 +13,7 @@ import time
 
 AU_TO_KM = 149597871000 # 1 AU in Km
 
-router = APIRouter(prefix="/v3")
+router = APIRouter()
 
 class format(str, Enum):
     json = ".json"
@@ -88,21 +88,21 @@ async def get_sunrise(response_format: format = Query(None, description="File fo
                                    "distance": sunset[2]}
         day_i_element["moonrise"] = {"desc": "LOCAL DIURNAL MOON RISE",
                                      "time": moonrise[0],
-                                     "Azimuth:": f"{moonrise[1]}",
+                                     "azimuth:": f"{moonrise[1]}",
                                      "distance": moonrise[2]}
         day_i_element["moonset"] = {"desc": "LOCAL DIURNAL MOON SET",
                                    "time": moonset[0],
-                                   "Azimuth:": moonset[1],
+                                   "azimuth:": moonset[1],
                                    "distance": moonset[2]}
         day_i_element["moonphase"] = {"desc": "Moonphase",
                                       "time" : date + "T00:00:00" + offset,
                                       "value": moonphase.degrees}
         day_i_element["solarnoon"] = {"desc": "SOLAR MERIDIAN CROSSING",
                                       "time": solarnoon[0][0],
-                                      "Altitude":solarnoon[0][1] }
+                                      "altitude":solarnoon[0][1] }
         day_i_element["solarmidnight"] = {"desc": "SOLAR ANTIMERIDIAN CROSSING",
                                           "time": solarnoon[1][0],
-                                          "Altitude":solarnoon[1][1]}
+                                          "altitude":solarnoon[1][1]}
         data["time"].append(day_i_element)
         datetime_date = datetime_date + timedelta(days=1)
     if response_format == format.xml:
