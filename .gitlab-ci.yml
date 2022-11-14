@@ -1,5 +1,6 @@
 stages:
   - build
+  - release
 
 .build:
   stage: build
@@ -28,3 +29,15 @@ sunrise:
   variables:
     REGISTRY_IMAGE: "${CI_REGISTRY_IMAGE}/${CI_JOB_NAME}"
     DOCKERFILE: Dockerfile
+
+tjenester/celestial:
+  stage: release
+  rules: *buildrules
+  variables:
+    UPSTREAM_CI_COMMIT_SHA: "${CI_COMMIT_SHA}"
+    UPSTREAM_CI_PROJECT_PATH: "${CI_PROJECT_PATH}"
+    UPSTREAM_CI_PROJECT_URL: "${CI_PROJECT_URL}"
+    UPSTREAM_IMAGES: "${CI_REGISTRY_IMAGE}:${CI_COMMIT_TAG}"
+  trigger: tjenester/celestial
+
+
