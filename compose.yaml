@@ -1,7 +1,7 @@
 services:
   api:
     build: .
-    container_name: sunrise-v3
+    container_name: celestial
     environment:
       PORT: 8080
     ports:
