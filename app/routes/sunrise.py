@@ -19,7 +19,7 @@ class format(str, Enum):
     json = ".json"
     xml = ".xml"
 
-@router.get("/events/{response_format}")
+@router.get("/v3/events/{response_format}")
 async def get_sunrise(response_format: format = Query(None, description="File format of response."),
                 date: str = Query(None,
                                   description="date on format YYYY-MM-DD."),
