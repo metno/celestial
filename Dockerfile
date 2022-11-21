@@ -14,7 +14,4 @@ WORKDIR /app
 # lastly
 USER 1000
 
-# compile python
-RUN python3 -m compileall /app
-
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080", "--workers", "9"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080", "--workers", "129"]
