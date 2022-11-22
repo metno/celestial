@@ -20,7 +20,7 @@ class format(str, Enum):
     xml = ".xml"
 
 @router.get("/events/{response_format}")
-async def get_sunrise(response_format: format = Query(None, description="File format of response."),
+def get_sunrise(response_format: format = Query(None, description="File format of response."),
                 date: str = Query(None,
                                   description="date on format YYYY-MM-DD."),
                 lat: float = Query(default=51.477, gt=-90.0, lt= 90.0,
