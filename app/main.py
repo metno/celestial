@@ -8,7 +8,8 @@ from fastapi.responses import HTMLResponse
 from routes.sunrise import router
 from exception_handler import http_exception_handler
 from time import perf_counter
-
+from anyio.lowlevel import RunVar
+from anyio import CapacityLimiter
 #################################
 # Setting up logging module     #
 #################################
@@ -39,6 +40,7 @@ async def startup_event():
         style="{", use_colors=True,
         )
     logger.handlers[0].setFormatter(console_formatter)
+    RunVar("_default_thread_limiter").set(CapacityLimiter(2))
 
 @app.middleware("http")
 async def add_process_time_header(request: Request,
