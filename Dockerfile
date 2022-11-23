@@ -1,4 +1,4 @@
-FROM python:3.11
+FROM python:3.12-rc
 
 COPY requirements.txt /app/requirements.txt
 COPY ./app /app
@@ -18,3 +18,4 @@ USER 1000
 RUN python3 -m compileall /app
 
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080", "--workers", "1"]
+#CMD ["hypercorn", "main:app", "--bind", "0.0.0.0:8080"]
