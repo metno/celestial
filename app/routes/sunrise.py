@@ -69,7 +69,7 @@ async def get_sunrise(response_format: format = Query(None, description="File fo
     data["time"] = []
     
     for i in range(days):
-        sunrise, sunset, moonrise, moonset, solarnoon, moonphase = calculate_one_day(datetime_date,
+        sunrise, sunset, moonrise, moonset, solarnoon, moonphase = await calculate_one_day(datetime_date,
                                                                                      ts,
                                                                                      eph,
                                                                                      loc,
@@ -115,7 +115,7 @@ async def get_sunrise(response_format: format = Query(None, description="File fo
 
 
 
-def calculate_one_day(date, ts, eph, loc, offset_h, offset_m, delta_offset):
+async def calculate_one_day(date, ts, eph, loc, offset_h, offset_m, delta_offset):
     """
     Returns moonrise and sunset for a given
     date and position in lat,lon with optional height
@@ -153,7 +153,7 @@ def calculate_one_day(date, ts, eph, loc, offset_h, offset_m, delta_offset):
     #time_tot_2 = (time_2 - time_1) * 1000
     #print(f"moonrise and moonset time: {time_tot_2} ms")
     #time_1 = time.time()
-    solarnoon = meridian_transit(loc, eph, start, end, "Sun", offset_h, offset_m)
+    solarnoon = await meridian_transit(loc, eph, start, end, "Sun", offset_h, offset_m)
     #time_2 = time.time()
     ##time_tot_3 = (time_2 - time_1) * 1000
     ##print(f"Solarnoon time: {time_tot_3} ms")
@@ -165,7 +165,7 @@ def calculate_one_day(date, ts, eph, loc, offset_h, offset_m, delta_offset):
     return(sunrise, sunset, moonrise, moonset, solarnoon, moonphase)
 
 
-def meridian_transit(loc, eph, start, end, body, offset_h, offset_m):
+async def meridian_transit(loc, eph, start, end, body, offset_h, offset_m):
     """
     Calculates the time at which a body passes a location meridian,
     at which point it reaches its highest elevation in the sky
