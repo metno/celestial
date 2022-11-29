@@ -14,7 +14,7 @@ import time
 AU_TO_KM = 149597871000 # 1 AU in Km
 
 router = APIRouter()
-
+eph = init_eph()
 class format(str, Enum):
     json = ".json"
     xml = ".xml"
@@ -52,7 +52,8 @@ async def get_sunrise(response_format: format = Query(None, description="File fo
                             status_code=HTTPStatus.BAD_REQUEST)
     datetime_date = datetime.strptime(date, "%Y-%m-%d")
     ts = api.load.timescale()
-    eph = init_eph()
+    # eph = init_eph()
+    global eph
     loc = api.wgs84.latlon(lat, lon, elevation_m=elevation)
     # Parse offset string
     offset_h = int(offset[:3])
@@ -69,7 +70,7 @@ async def get_sunrise(response_format: format = Query(None, description="File fo
     data["time"] = []
     
     for i in range(days):
-        sunrise, sunset, moonrise, moonset, solarnoon, moonphase = calculate_one_day(datetime_date,
+        sunrise, sunset, moonrise, moonset, solarnoon, moonphase = await calculate_one_day(datetime_date,
                                                                                      ts,
                                                                                      eph,
                                                                                      loc,
@@ -115,7 +116,7 @@ async def get_sunrise(response_format: format = Query(None, description="File fo
 
 
 
-def calculate_one_day(date, ts, eph, loc, offset_h, offset_m, delta_offset):
+async def calculate_one_day(date, ts, eph, loc, offset_h, offset_m, delta_offset):
     """
     Returns moonrise and sunset for a given
     date and position in lat,lon with optional height
@@ -143,17 +144,17 @@ def calculate_one_day(date, ts, eph, loc, offset_h, offset_m, delta_offset):
     end = ts.utc(start.utc_datetime() + timedelta(days=1, minutes=1))
     #print(start.utc_datetime().strftime("%Y-%m-%dT%H:%M"), " - ", end.utc_datetime().strftime("%Y-%m-%dT%H:%M"))
     #time_1 = time.time()
-    sunrise, sunset = set_and_rise(loc, eph, start, end, "Sun", offset_h, offset_m)
+    sunrise, sunset = await set_and_rise(loc, eph, start, end, "Sun", offset_h, offset_m)
     #time_2 = time.time()
     #time_tot_1 = (time_2 - time_1) * 1000
     #print(f"sunrise and sunset time: {time_tot_1} ms")
     #time_1 = time.time()
-    moonrise, moonset = set_and_rise(loc, eph, start, end, "Moon", offset_h, offset_m)
+    moonrise, moonset = await set_and_rise(loc, eph, start, end, "Moon", offset_h, offset_m)
     #time_2 = time.time()
     #time_tot_2 = (time_2 - time_1) * 1000
     #print(f"moonrise and moonset time: {time_tot_2} ms")
     #time_1 = time.time()
-    solarnoon = meridian_transit(loc, eph, start, end, "Sun", offset_h, offset_m)
+    solarnoon = await meridian_transit(loc, eph, start, end, "Sun", offset_h, offset_m)
     #time_2 = time.time()
     ##time_tot_3 = (time_2 - time_1) * 1000
     ##print(f"Solarnoon time: {time_tot_3} ms")
@@ -165,7 +166,7 @@ def calculate_one_day(date, ts, eph, loc, offset_h, offset_m, delta_offset):
     return(sunrise, sunset, moonrise, moonset, solarnoon, moonphase)
 
 
-def meridian_transit(loc, eph, start, end, body, offset_h, offset_m):
+async def meridian_transit(loc, eph, start, end, body, offset_h, offset_m):
     """
     Calculates the time at which a body passes a location meridian,
     at which point it reaches its highest elevation in the sky
@@ -202,7 +203,7 @@ def meridian_transit(loc, eph, start, end, body, offset_h, offset_m):
     meridian = meridian.utc_datetime() + timedelta(hours=offset_h, minutes=offset_m)
     return([meridian.strftime("%Y-%m-%dT%H:%M"), alt[0]], [antimeridian.strftime("%Y-%m-%dT%H:%M"), alt[1]])
 
-def set_and_rise(loc, eph, start, end, body, offset_h, offset_m):
+async def set_and_rise(loc, eph, start, end, body, offset_h, offset_m):
     """
     Calculates rising and setting times for a given
     celestial body as viewed from a location on Earth.

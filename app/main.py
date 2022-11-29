@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import uvicorn
+#import uvicorn
 import logging
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, HTTPException, Request, Response
@@ -8,28 +8,26 @@ from fastapi.responses import HTMLResponse
 from routes.sunrise import router
 from exception_handler import http_exception_handler
 from time import perf_counter
-
 #################################
 # Setting up logging module     #
 #################################
 import logging
 
-
 app = FastAPI(openapi_url="/openapi.json",
               docs_url="/docs")
 
+
 app.include_router(router)
 origins = [
-    "https://api.met.no/",
-]
+    "https://api.met.no/"]
 
 app.add_middleware(
         CORSMiddleware,
         allow_origins=origins,
         allow_credentials=True,
         allow_methods=["*"],
-        allow_headers=["*"]
-    )
+        allow_headers=["*"])
+
 logger = logging.getLogger("uvicorn.access")
 
 @app.on_event("startup")
@@ -64,10 +62,11 @@ app.add_exception_handler(HTTPException,
                           http_exception_handler)
 
 
-if __name__ == "__main__":
-
-    uvicorn.run("main:app",
-                host='0.0.0.0',
-                port=5000,
-                reload=True)
+#if __name__ == "__main__":
+#
+#    uvicorn.run("main:app",
+#                host='0.0.0.0',
+#                port=8080,
+#                workers=4,
+#                limit_concurrency=20)
 
