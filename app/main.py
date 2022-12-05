@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-#import uvicorn
+import uvicorn
 import logging
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, HTTPException, Request, Response

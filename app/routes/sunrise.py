@@ -12,6 +12,8 @@ from core.make_xml import make_xml
 import time
 
 AU_TO_KM = 149597871000 # 1 AU in Km
+EPS = 1e-3
+
 
 router = APIRouter()
 eph = init_eph()
@@ -192,7 +194,7 @@ async def meridian_transit(loc, eph, start, end, body, offset_h, offset_m):
     """
     f = almanac.meridian_transits(eph, eph[body], loc)
     
-    times, events = almanac.find_discrete(start, end, f)
+    times, events = almanac.find_discrete(start, end, f, epsilon=EPS)
     astro = (eph["earth"] + loc).at(times).observe(eph[body])
     app = astro.apparent()
     alt = app.altaz()[0]
@@ -238,7 +240,7 @@ async def set_and_rise(loc, eph, start, end, body, offset_h, offset_m):
         f = almanac.sunrise_sunset(eph, loc)
     else:
         f = almanac.risings_and_settings(eph, eph[body], loc)
-    t, y = almanac.find_discrete(start, end, f)
+    t, y = almanac.find_discrete(start, end, f, epsilon=EPS)
     if len(y) > 0:
         astro = (eph["earth"] + loc).at(t).observe(eph[body])
         app = astro.apparent()
