@@ -1,10 +1,12 @@
 import re
 from datetime import datetime, timedelta
+
 from enum import Enum
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import Response
 from typing import Optional
 from skyfield import api
+from skyfield.api import utc
 from skyfield import almanac
 from http import HTTPStatus
 from routes.initialize import init_eph
@@ -12,8 +14,8 @@ from core.make_xml import make_xml
 import time
 
 AU_TO_KM = 149597871000 # 1 AU in Km
-EPS = 1e-3
-
+EPS = 0.001
+TIME_FORMAT = "%Y-%m-%dT%H:%M"
 
 router = APIRouter()
 eph = init_eph()
@@ -72,7 +74,7 @@ async def get_sunrise(response_format: format = Query(None, description="File fo
     data["time"] = []
     
     for i in range(days):
-        sunrise, sunset, moonrise, moonset, solarnoon, moonphase = await calculate_one_day(datetime_date,
+        sunrise, sunset, moonrise, moonset, solarnoon, moonnoon, moonphase = await calculate_one_day(datetime_date,
                                                                                      ts,
                                                                                      eph,
                                                                                      loc,
@@ -102,16 +104,22 @@ async def get_sunrise(response_format: format = Query(None, description="File fo
                                       "value": moonphase.degrees}
         day_i_element["solarnoon"] = {"desc": "SOLAR MERIDIAN CROSSING",
                                       "time": solarnoon[0][0],
-                                      "altitude":solarnoon[0][1] }
+                                      "altitude": solarnoon[0][1]}                                     
         day_i_element["solarmidnight"] = {"desc": "SOLAR ANTIMERIDIAN CROSSING",
                                           "time": solarnoon[1][0],
                                           "altitude":solarnoon[1][1]}
+        day_i_element["lunarnoon"] = {"desc": "LUNAR MERIDIAN CROSSING",
+                                      "time": moonnoon[0][0],
+                                      "altitude":  moonnoon[0][1]}
+        day_i_element["lunarmidnight"] = {"desc": "LUNAR MERIDIAN CROSSING",
+                                          "time": moonnoon[1][0],
+                                          "altitude":  moonnoon[1][1]}
         data["time"].append(day_i_element)
         datetime_date = datetime_date + timedelta(days=1)
     if response_format == format.xml:
-        return(Response(content = make_xml(data), media_type="application/xml"))
+        return (Response(content = make_xml(data), media_type="application/xml"))
     elif response_format == format.json:
-        return(data)
+        return (data)
     else:
         raise HTTPException(detail=f"Unknown or not supported format requested: {format}.",
                             status_code=HTTPStatus.BAD_REQUEST)
@@ -140,32 +148,24 @@ async def calculate_one_day(date, ts, eph, loc, offset_h, offset_m, delta_offset
     """
 
     # Set start and end time for position with UTC offset
-    start = ts.utc(date.year, date.month, date.day)
+    start = datetime(date.year, date.month, date.day, tzinfo=utc)
     
-    start = ts.utc(start.utc_datetime() + timedelta(hours=delta_offset))
-    end = ts.utc(start.utc_datetime() + timedelta(days=1, minutes=1))
-    #print(start.utc_datetime().strftime("%Y-%m-%dT%H:%M"), " - ", end.utc_datetime().strftime("%Y-%m-%dT%H:%M"))
-    #time_1 = time.time()
+    start = start + timedelta(hours=delta_offset)
+    end = start + timedelta(days=1, minutes=1)
+    solarnoon = await meridian_transit(loc, eph, ts.utc(start), ts.utc(end), "Sun", offset_h, offset_m)
+
+    # Use solarnoon to set start and end of interval.
+    solarnoon_strptime = datetime.strptime(solarnoon[0][0], TIME_FORMAT)
+    solarnoon_minus_12h = (solarnoon_strptime - timedelta(hours=12)).replace(tzinfo=utc)
+    solarnoon_plus_12_h = (solarnoon_strptime + timedelta(hours=12)).replace(tzinfo=utc)
+    start = ts.utc(min(start, solarnoon_minus_12h))
+    end = ts.utc(max(end, solarnoon_plus_12_h))
+
     sunrise, sunset = await set_and_rise(loc, eph, start, end, "Sun", offset_h, offset_m)
-    #time_2 = time.time()
-    #time_tot_1 = (time_2 - time_1) * 1000
-    #print(f"sunrise and sunset time: {time_tot_1} ms")
-    #time_1 = time.time()
     moonrise, moonset = await set_and_rise(loc, eph, start, end, "Moon", offset_h, offset_m)
-    #time_2 = time.time()
-    #time_tot_2 = (time_2 - time_1) * 1000
-    #print(f"moonrise and moonset time: {time_tot_2} ms")
-    #time_1 = time.time()
-    solarnoon = await meridian_transit(loc, eph, start, end, "Sun", offset_h, offset_m)
-    #time_2 = time.time()
-    ##time_tot_3 = (time_2 - time_1) * 1000
-    ##print(f"Solarnoon time: {time_tot_3} ms")
-    #time_1 = time.time()
+    moonnoon = await meridian_transit(loc, eph, start, end, "Moon", offset_h, offset_m)
     moonphase = almanac.moon_phase(eph, start)
-    #time_2 = time.time()
-    #time_tot_3 = (time_2 - time_1) * 1000
-    #print(f"moonphase time: {time_tot_3} ms")
-    return(sunrise, sunset, moonrise, moonset, solarnoon, moonphase)
+    return (sunrise, sunset, moonrise, moonset, solarnoon, moonnoon, moonphase)
 
 
 async def meridian_transit(loc, eph, start, end, body, offset_h, offset_m):
@@ -203,7 +203,8 @@ async def meridian_transit(loc, eph, start, end, body, offset_h, offset_m):
     meridian = times[events == 1][0]
     antimeridian = antimeridian.utc_datetime() + timedelta(hours=offset_h, minutes=offset_m)
     meridian = meridian.utc_datetime() + timedelta(hours=offset_h, minutes=offset_m)
-    return([meridian.strftime("%Y-%m-%dT%H:%M"), alt[0]], [antimeridian.strftime("%Y-%m-%dT%H:%M"), alt[1]])
+    return ([meridian.strftime("%Y-%m-%dT%H:%M"), alt[0]],
+            [antimeridian.strftime("%Y-%m-%dT%H:%M"), alt[1]])
 
 async def set_and_rise(loc, eph, start, end, body, offset_h, offset_m):
     """
@@ -264,4 +265,4 @@ async def set_and_rise(loc, eph, start, end, body, offset_h, offset_m):
             #print(body, " set at:", ti.strftime("%Y-%m-%dT%H:%M"))
             set = ti.strftime("%Y-%m-%dT%H:%M")
             set = [set, az, str(distance * AU_TO_KM) + " km"]
-    return(rise, set)
+    return (rise, set)
