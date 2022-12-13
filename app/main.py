@@ -62,11 +62,12 @@ app.add_exception_handler(HTTPException,
                           http_exception_handler)
 
 
-#if __name__ == "__main__":
-#
-#    uvicorn.run("main:app",
-#                host='0.0.0.0',
-#                port=8080,
-#                workers=4,
-#                limit_concurrency=20)
+if __name__ == "__main__":
+
+    uvicorn.run("main:app",
+                host='0.0.0.0',
+                port=8080,
+                workers=4,
+                reload=True,
+                limit_concurrency=20)
 
