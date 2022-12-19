@@ -16,10 +16,10 @@ def test_known_date():
 
     Check that the Sunrise application reproduses this plus minus a few minutes
     """
-    response = client.get("/v3/events/.json?offset=%2B01%3A00&date=2010-12-24&lat=59.91&lon=10.75&elevation=0")
+    response = client.get("/events/sun?offset=%2B01%3A00&date=2010-12-24&lat=59.91&lon=10.75&elevation=0")
     response_json = response.json()
-    sunset = response_json["time"][0]["sunset"]["time"]
-    sunrise = response_json["time"][0]["sunrise"]["time"]
+    sunset = response_json["properties"]["Sunset"]["time"]
+    sunrise = response_json["properties"]["Sunrise"]["time"]
     sunset = parser.parse(sunset)
     sunrise = parser.parse(sunrise)
     min_tol_sunset = datetime.datetime(2010, 12, 24, 15, 12, 0)
@@ -44,14 +44,17 @@ def test_north_pole():
     while start_date <= end_date:
         start_date += delta
         date = start_date.strftime("%Y-%m-%d")
-        response = client.get(f"/v3/events/.json?date={date}&lat=89.99&lon=20&elevation=0")
+        response = client.get(f"/events/sun?date={date}&lat=89.99&lon=20&elevation=0")
         response = response.json()
-        sunset = response["time"][0]["sunset"]["time"]
-        sunrise = response["time"][0]["sunrise"]["time"]
-        if sunset is not None:
+        sunset = response["properties"]["Sunset"]["time"]
+        sunrise = response["properties"]["Sunrise"]["time"]
+        print(sunset, sunrise)
+    
+        if sunset not in ["polar day","polar night", None]:
             n_sunset += 1
-        if sunrise is not None:
+        if sunrise not in ["polar day", "polar night", None]:
             n_sunrise +=1    
     assert n_sunrise == 1
     assert n_sunset == 1 
 
+test_known_date()
