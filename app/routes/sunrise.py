@@ -247,8 +247,8 @@ async def set_and_rise(loc, eph, start, end, body, offset_h, offset_m):
 
     set = [None, None]
     rise = [None, None]
-    zip_list = list(zip(t, y, az, distance))
-    for ti, yi, az, dist in zip_list:
+    zip_list = list(zip(t, y, az))
+    for ti, yi, az in zip_list:
         if yi:
             rise = ti.strftime(TIME_FORMAT)
             rise = [rise, az]
