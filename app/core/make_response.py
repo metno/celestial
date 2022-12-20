@@ -15,11 +15,17 @@ def make_response(setting, rising, meridian, antimeridian,
                         
     properties = {}
     properties["body"] = body
-    properties[f"{body.lower()}rise"] = {"time": rising[0] + offset,
-                                 "azimuth": arc_to_deg(rising[1])
+    
+    rising_time = rising[0] + offset if rising[0] is not None else None
+    az = arc_to_deg(setting[1]) if setting[1] is not None else None
+    properties[f"{body.lower()}rise"] = {"time": rising_time,
+                                 "azimuth": az
                                  }
-    properties[f"{body.lower()}set"] = {"time": setting[0] + offset,
-                                "azimuth": arc_to_deg(setting[1])
+    
+    setting_time = setting[0] + offset if setting[0] is not None else None
+    az = arc_to_deg(setting[1]) if setting[1] is not None else None
+    properties[f"{body.lower()}set"] = {"time": setting_time,
+                                "azimuth": az
                                 }
     
     events = [None,None]
@@ -52,7 +58,7 @@ def arc_to_deg(input)->float:
     \d deg \d\' \d\" to float. I.e converts
     arcminutes and arcsedonds to float.
     """
-    
+
     float_vals = re.findall(r"\d+(?:\.\d+)?", input)
     float_vals = (float(float_vals[0])
                  + float(float_vals[1]) / 60
