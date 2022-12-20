@@ -55,7 +55,7 @@ async def get_sunrise(
                                    "The date parameter has to be on the form YYYY-MM-DD",
                             status_code=HTTPStatus.BAD_REQUEST)
     # Regex checking +/-HH:MM offset pattern
-    offset_pattern = re.compile(r"[+-][0-9]{2}:[0-9]{2}\b")
+    offset_pattern = re.compile(r"[ +-]\d\d:\d\d")
     if not offset_pattern.match(offset):
         raise HTTPException(detail="Invalid format for offset parameter entered. "
                                    "The date parameter has to be on the form +/-HH:MM",
@@ -115,9 +115,11 @@ async def calculate_one_day(date, ts, eph, loc, offset_h,
     start = datetime(date.year, date.month, date.day, tzinfo=utc)
 
     start = start + timedelta(hours=delta_offset)
-    end = start + timedelta(days=1, minutes=1)
+    end = start + timedelta(days=1)
     if body == "Sun":
-        noon = await meridian_transit(loc, eph, ts.utc(start), ts.utc(end),
+        # Add one minute to account for noon occuring at 12:00
+        _end = end + timedelta(minutes=1)
+        noon = await meridian_transit(loc, eph, ts.utc(start), ts.utc(_end),
                                       "Sun", offset_h, offset_m, ts)
 
         # Use solarnoon to set start and end of interval.
@@ -127,23 +129,23 @@ async def calculate_one_day(date, ts, eph, loc, offset_h,
         solarnoon_plus_12_h = (solarnoon_strptime
                                + timedelta(hours=12)).replace(tzinfo=utc)
 
-        start = ts.utc(min(start, solarnoon_minus_12h))
-        end = ts.utc(max(end, solarnoon_plus_12_h))
+        _start = ts.utc(min(start, solarnoon_minus_12h))
+        _end = ts.utc(max(end, solarnoon_plus_12_h))
         moonphase = None
     elif body == "Moon":
-        start = ts.utc(start)
-        end = ts.utc(end)
-        noon = await meridian_transit(loc, eph, start, end,
+        _start = ts.utc(start)
+        # Add one minute to account for noon occuring at 12:00
+        _end = ts.utc(end + timedelta(minutes=1))
+        noon = await meridian_transit(loc, eph, _start, _end,
                                       body, offset_h, offset_m, ts)
-        moonphase = almanac.moon_phase(eph, start)
+        moonphase = almanac.moon_phase(eph, _start)
     else:
         raise HTTPException(status_code=HTTPStatus.BAD_REQUEST,
                             detail=f"Unsopported celestial body \"{body}\" entered.")
 
-    rising, setting = await set_and_rise(loc, eph, start, end,
+    rising, setting = await set_and_rise(loc, eph, _start, _end,
                                          body, offset_h, offset_m)
-    return (rising, setting, noon, moonphase,
-            start.utc_datetime(), end.utc_datetime())
+    return (rising, setting, noon, moonphase, start, end)
 
 
 async def meridian_transit(loc, eph, start, end, body, offset_h, offset_m, ts):
@@ -191,10 +193,10 @@ async def meridian_transit(loc, eph, start, end, body, offset_h, offset_m, ts):
     antimeridian = antimeridian.utc_datetime() + timedelta(hours=offset_h, minutes=offset_m)
     meridian = meridian.utc_datetime() + timedelta(hours=offset_h, minutes=offset_m)
     meridian_list = [meridian.strftime(TIME_FORMAT), alt[meridian_index],
-                     str(distance[meridian_index] * AU_TO_KM) + " km",
+                     distance[meridian_index] * AU_TO_KM,
                      meridian_visible]
     antimeridian_list = [antimeridian.strftime(TIME_FORMAT), alt[antimeridian_index],
-                         str(distance[antimeridian_index] * AU_TO_KM) + " km",
+                         distance[antimeridian_index] * AU_TO_KM,
                          antimeridian_visible]
     return (meridian_list, antimeridian_list)
 
