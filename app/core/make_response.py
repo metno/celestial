@@ -1,7 +1,8 @@
 import re
 
 def make_response(setting, rising, meridian, antimeridian,
-                  start, end, body, lat, lon, elevation, moonphase, offset)->dict:
+                  start, end, body, lat, lon, elevation,
+                  moonphase, offset) -> dict:
     response = {}
     response["copyright"] = "MET Norway"
     response["licenseURL"] = "https://api.met.no/license_data.html"
@@ -11,8 +12,7 @@ def make_response(setting, rising, meridian, antimeridian,
                             "coordinates": [lon, lat, elevation]}
     response["when"] = {"interval": [start + offset,
                                      end + offset]
-                        }
-
+                        }          
     properties = {}
     properties["body"] = body
 
@@ -27,7 +27,6 @@ def make_response(setting, rising, meridian, antimeridian,
     properties[f"{body.lower()}set"] = {"time": setting_time,
                                 "azimuth": az
                                 }
-
     events = [None,None]
     if body == "Sun":
         events = ["solarnoon", "solarmidnight"]
@@ -52,10 +51,10 @@ def make_response(setting, rising, meridian, antimeridian,
     response["properties"] = properties
     return (response)
 
-def arc_to_deg(input)->float:
+def arc_to_deg(input) -> float:
     """
     converts input string on the format
-    \d deg \d\' \d\" to float. I.e converts
+    \"xx deg xx' xx"\" to float. I.e converts
     arcminutes and arcsedonds to float.
     """
 

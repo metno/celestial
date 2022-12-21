@@ -1,6 +1,6 @@
 import re
+import schemas.response_schemas as response_schemas
 from datetime import datetime, timedelta
-
 from enum import Enum
 from fastapi import APIRouter, HTTPException, Query, Path
 from typing import Optional
@@ -25,7 +25,8 @@ class bodies(str, Enum):
     sun: str = "sun"
 
 
-@router.get("/events/{body}")
+@router.get("/events/{body}",
+            responses={200: {"model": response_schemas.events}})
 async def get_sunrise(
     body: bodies = Path(..., description="Celestial body for which to query for events"),
     date: str = Query(...,
@@ -39,7 +40,7 @@ async def get_sunrise(
                                        description="elevation above earth ellipsoid in unit meter."),
     offset: Optional[str] = Query(default="+00:00",
                                   description="Offset from utc time. Has to be on format +/-HH:MM"),
-                       ):
+                       ) -> dict:
     """
     Returns moonrise and sunset for a given
     date and position in (lat,lon) with optional height
@@ -90,7 +91,7 @@ async def get_sunrise(
 
 
 async def calculate_one_day(date, ts, eph, loc, offset_h,
-                            offset_m, delta_offset, body):
+                            offset_m, delta_offset, body) -> list:
     """
     Returns moonrise and sunset for a given
     date and position in lat,lon with optional height
@@ -137,7 +138,7 @@ async def calculate_one_day(date, ts, eph, loc, offset_h,
         # Add one minute to account for noon occuring at 12:00
         _end = ts.utc(end + timedelta(minutes=1))
         noon = await meridian_transit(loc, eph, _start, _end,
-                                      body, offset_h, offset_m, ts)
+                                      body, offset_h, offset_m)
         moonphase = almanac.moon_phase(eph, _start)
     else:
         raise HTTPException(status_code=HTTPStatus.BAD_REQUEST,
@@ -148,7 +149,7 @@ async def calculate_one_day(date, ts, eph, loc, offset_h,
     return (rising, setting, noon, moonphase, start, end)
 
 
-async def meridian_transit(loc, eph, start, end, body, offset_h, offset_m, ts):
+async def meridian_transit(loc, eph, start, end, body, offset_h, offset_m) -> list:
     """
     Calculates the time at which a body passes a location meridian,
     at which point it reaches its highest elevation in the sky
@@ -190,18 +191,22 @@ async def meridian_transit(loc, eph, start, end, body, offset_h, offset_m, ts):
     meridian_visible = f(meridian)
     antimeridian_visible = f(antimeridian)
 
-    antimeridian = antimeridian.utc_datetime() + timedelta(hours=offset_h, minutes=offset_m)
-    meridian = meridian.utc_datetime() + timedelta(hours=offset_h, minutes=offset_m)
-    meridian_list = [meridian.strftime(TIME_FORMAT), alt[meridian_index],
+    antimeridian = (antimeridian.utc_datetime()
+                    + timedelta(hours=offset_h, minutes=offset_m))
+    meridian = (meridian.utc_datetime()
+                + timedelta(hours=offset_h, minutes=offset_m))
+    meridian_list = [meridian.strftime(TIME_FORMAT),
+                     alt[meridian_index],
                      distance[meridian_index] * AU_TO_KM,
                      meridian_visible]
-    antimeridian_list = [antimeridian.strftime(TIME_FORMAT), alt[antimeridian_index],
+    antimeridian_list = [antimeridian.strftime(TIME_FORMAT),
+                         alt[antimeridian_index],
                          distance[antimeridian_index] * AU_TO_KM,
                          antimeridian_visible]
     return (meridian_list, antimeridian_list)
 
 
-async def set_and_rise(loc, eph, start, end, body, offset_h, offset_m):
+async def set_and_rise(loc, eph, start, end, body, offset_h, offset_m) -> list:
     """
     Calculates rising and setting times for a given
     celestial body as viewed from a location on Earth.
