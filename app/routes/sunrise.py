@@ -121,7 +121,7 @@ async def calculate_one_day(date, ts, eph, loc, offset_h,
         # Add one minute to account for noon occuring at 12:00
         _end = end + timedelta(minutes=1)
         noon = await meridian_transit(loc, eph, ts.utc(start), ts.utc(_end),
-                                      "Sun", offset_h, offset_m, ts)
+                                      "Sun", offset_h, offset_m)
 
         # Use solarnoon to set start and end of interval.
         solarnoon_strptime = datetime.strptime(noon[0][0], TIME_FORMAT)
