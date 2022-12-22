@@ -36,8 +36,8 @@ async def get_sunrise(
                        description="latitude in degrees. Default value set to Greenwich observatory."),
     lon: float = Query(default=-0.001, gt=-180.0, lt=180.0,
                        description="longitude in degrees. Default value set to Greenwich observatory."),
-    elevation: Optional[float] = Query(default=0,
-                                       description="elevation above earth ellipsoid in unit meter."),
+    altitude: Optional[float] = Query(default=0,
+                                       description="altitude above earth ellipsoid in unit meter."),
     offset: Optional[str] = Query(default="+00:00",
                                   description="Offset from utc time. Has to be on format +/-HH:MM"),
                        ) -> dict:
@@ -65,7 +65,7 @@ async def get_sunrise(
     ts = api.load.timescale()
     # eph = init_eph()
     global eph
-    loc = api.wgs84.latlon(lat, lon, elevation_m=elevation)
+    loc = api.wgs84.latlon(lat, lon, elevation_m=altitude)
     # Parse offset string
     offset_h = int(offset[:3])
     offset_m = int(offset[4:])
@@ -87,7 +87,7 @@ async def get_sunrise(
     return (make_response(setting, rising, noon[0], noon[1],
                           start.strftime(TIME_FORMAT),
                           end.strftime(TIME_FORMAT),
-                          body, lat, lon, elevation, moonphase, offset))
+                          body, lat, lon, altitude, moonphase, offset))
 
 
 async def calculate_one_day(date, ts, eph, loc, offset_h,
@@ -181,7 +181,7 @@ async def meridian_transit(loc, eph, start, end, body, offset_h, offset_m) -> li
     app = astro.apparent()
     alt, az, distance = app.altaz()
     distance = distance.au
-    alt = alt.dstr()
+    alt = alt.degrees
     antimeridian = times[events == 0][0]
     meridian = times[events == 1][0]
     meridian_index = where(events == 1)[0][0]
@@ -247,7 +247,7 @@ async def set_and_rise(loc, eph, start, end, body, offset_h, offset_m) -> list:
         app = astro.apparent()
         alt, az, distance = app.altaz()
         distance = distance.au
-        az = az.dstr()
+        az = az.degrees
     else:
         az = [None, None]
     t = t.utc_datetime() + timedelta(hours=offset_h, minutes=offset_m)
