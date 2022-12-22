@@ -1,8 +1,9 @@
 import re
+from datetime import datetime, timedelta
 
 def make_response(setting, rising, meridian, antimeridian,
                   start, end, body, lat, lon, altitude,
-                  moonphase, offset) -> dict:
+                  moonphase, offset, delta_offset) -> dict:
     response = {}
     response["copyright"] = "MET Norway"
     response["licenseURL"] = "https://api.met.no/license_data.html"
@@ -10,8 +11,14 @@ def make_response(setting, rising, meridian, antimeridian,
     response["type"] = "Feature"
     response["geometry"] = {"type": "Point",
                             "coordinates": [lon, lat, altitude]}
-    response["when"] = {"interval": [start + offset,
-                                     end + offset]
+    #print(delta_offset)
+    #delta_offset_string = datetime.fromtimestamp(3600 * delta_offset).strftime("%H:%M")
+    #delta_offset_string = str(timedelta(hours=delta_offset))
+    #print(delta_offset_string)
+    #sign = "-" if delta_offset > 0 else "+"
+
+    response["when"] = {"interval": [start + "+00:00",
+                                     end + "+00:00"]
                         }          
     properties = {}
     properties["body"] = body

@@ -87,7 +87,7 @@ async def get_sunrise(
     return (make_response(setting, rising, noon[0], noon[1],
                           start.strftime(TIME_FORMAT),
                           end.strftime(TIME_FORMAT),
-                          body, lat, lon, altitude, moonphase, offset))
+                          body, lat, lon, altitude, moonphase, offset, delta_offset))
 
 
 async def calculate_one_day(date, ts, eph, loc, offset_h,
