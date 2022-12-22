@@ -18,13 +18,15 @@ def make_response(setting, rising, meridian, antimeridian,
 
     rising_time = rising[0] + offset if rising[0] is not None else None
     az = arc_to_deg(setting[1]) if setting[1] is not None else None
-    properties[f"{body.lower()}rise"] = {"time": rising_time,
-                                 "azimuth": az
-                                 }
+    properties[f"{body.lower()}rise"] = {
+                                    "time": rising_time,
+                                    "azimuth": az
+                                    }
 
     setting_time = setting[0] + offset if setting[0] is not None else None
     az = arc_to_deg(setting[1]) if setting[1] is not None else None
-    properties[f"{body.lower()}set"] = {"time": setting_time,
+    properties[f"{body.lower()}set"] = {
+                                "time": setting_time,
                                 "azimuth": az
                                 }
     events = [None,None]
@@ -35,14 +37,14 @@ def make_response(setting, rising, meridian, antimeridian,
 
     properties[events[0]] = {
                              "time": meridian[0] + offset,
-                             "altitude": arc_to_deg(meridian[1]),
+                             "disc_centre_elevation": arc_to_deg(meridian[1]),
                              "distance": round(float(meridian[2]), 2),
                              "visible": str(meridian[3]) == "True"
                              }
 
     properties[events[1]] = {
                              "time": antimeridian[0] + offset,
-                             "altitude": arc_to_deg(antimeridian[1]),
+                             "disc_centre_elevation": arc_to_deg(antimeridian[1]),
                              "distance": round(float(antimeridian[2]), 2),
                              "visible": str(antimeridian[3]) == "True"
                              }
