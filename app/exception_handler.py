@@ -15,14 +15,14 @@ async def http_exception_handler(request, exc):
     """
     logger.info(f"Call to endpoint {request.url.path} "
                  f"failed with status_code {exc.status_code}")
-    return(JSONResponse(str(exc.detail),
+    return(JSONResponse(content=str(exc.detail),
                         headers=headers,
                         status_code=exc.status_code))
 
 async def unexpected_exception_handler(request, exc):
     logger.info(f"Call to endpoint {request.url.path} "
                  f"Error message: {str(exc)}")
-    return(JSONResponse(f"Call to endpoint {request.url.path} failed with an "
+    return(JSONResponse(content=f"Call to endpoint {request.url.path} failed with an "
                         "internal error.",
                         headers=headers,
                         status_code=HTTPStatus.INTERNAL_SERVER_ERROR))
