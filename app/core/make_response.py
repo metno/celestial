@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 
 def make_response(setting, rising, meridian, antimeridian,
                   start, end, body, lat, lon, altitude,
-                  moonphase, offset, delta_offset) -> dict:
+                  moonphase, offset) -> dict:
     response = {}
     response["copyright"] = "MET Norway"
     response["licenseURL"] = "https://api.met.no/license_data.html"

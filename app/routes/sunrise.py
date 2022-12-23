@@ -87,7 +87,7 @@ async def get_sunrise(
     return (make_response(setting, rising, noon[0], noon[1],
                           start.strftime(TIME_FORMAT),
                           end.strftime(TIME_FORMAT),
-                          body, lat, lon, altitude, moonphase, offset, delta_offset))
+                          body, lat, lon, altitude, moonphase, offset))
 
 
 async def calculate_one_day(date, ts, eph, loc, offset_h,
@@ -117,11 +117,17 @@ async def calculate_one_day(date, ts, eph, loc, offset_h,
 
     start = start + timedelta(hours=delta_offset)
     end = start + timedelta(days=1)
+    f_transit = almanac.meridian_transits(eph, eph[body], loc)
     if body == "Sun":
         # Add one minute to account for noon occuring at 12:00
         _end = end + timedelta(minutes=1)
+
+        # Use specially made function if body == Sun
+        # For taking into account atmospheric refraction and sun diameter
+        f_rising = almanac.sunrise_sunset(eph, loc)
         noon = await meridian_transit(loc, eph, ts.utc(start), ts.utc(_end),
-                                      "Sun", offset_h, offset_m)
+                                      "Sun", offset_h, offset_m, f_rising,
+                                      f_transit)
 
         # Use solarnoon to set start and end of interval.
         solarnoon_strptime = datetime.strptime(noon[0][0], TIME_FORMAT)
@@ -134,22 +140,25 @@ async def calculate_one_day(date, ts, eph, loc, offset_h,
         _end = ts.utc(max(end, solarnoon_plus_12_h))
         moonphase = None
     elif body == "Moon":
+        f_rising = almanac.risings_and_settings(eph, eph[body], loc)
         _start = ts.utc(start)
         # Add one minute to account for noon occuring at 12:00
         _end = ts.utc(end + timedelta(minutes=1))
         noon = await meridian_transit(loc, eph, _start, _end,
-                                      body, offset_h, offset_m)
+                                      body, offset_h, offset_m,
+                                      f_rising, f_transit)
         moonphase = almanac.moon_phase(eph, _start)
     else:
         raise HTTPException(status_code=HTTPStatus.BAD_REQUEST,
                             detail=f"Unsopported celestial body \"{body}\" entered.")
 
     rising, setting = await set_and_rise(loc, eph, _start, _end,
-                                         body, offset_h, offset_m)
+                                         body, offset_h, offset_m, f_rising)
     return (rising, setting, noon, moonphase, start, end)
 
 
-async def meridian_transit(loc, eph, start, end, body, offset_h, offset_m) -> list:
+async def meridian_transit(loc, eph, start, end, body, offset_h, offset_m, 
+                           f_rising, f_transit) -> list:
     """
     Calculates the time at which a body passes a location meridian,
     at which point it reaches its highest elevation in the sky
@@ -172,11 +181,16 @@ async def meridian_transit(loc, eph, start, end, body, offset_h, offset_m) -> li
     body: str
         Name of celestial object in which
         to calculate rising and setting times
-    ts: skyfield.api timescale Object
-        timescale needed for calculating visibility
+
+    f_rising: skyfield almanac.rising_and_settings object
+        Initialized object for finding rising and setting times.
+        Used in this function for checking visibility of an object
+
+    f_transit: skyfield almanac.meridian_transits object
+        Initialized object for finding meridian transit times.
     """
-    f = almanac.meridian_transits(eph, eph[body], loc)
-    times, events = almanac.find_discrete(start, end, f, epsilon=EPS)
+
+    times, events = almanac.find_discrete(start, end, f_transit, epsilon=EPS)
     astro = (eph["earth"] + loc).at(times).observe(eph[body])
     app = astro.apparent()
     alt, az, distance = app.altaz()
@@ -188,8 +202,8 @@ async def meridian_transit(loc, eph, start, end, body, offset_h, offset_m) -> li
     antimeridian_index = where(events == 0)[0][0]
 
     # Check if body is visible to inform about polar day and night
-    meridian_visible = f(meridian)
-    antimeridian_visible = f(antimeridian)
+    meridian_visible = f_rising(meridian)
+    antimeridian_visible = f_rising(antimeridian)
 
     antimeridian = (antimeridian.utc_datetime()
                     + timedelta(hours=offset_h, minutes=offset_m))
@@ -206,7 +220,7 @@ async def meridian_transit(loc, eph, start, end, body, offset_h, offset_m) -> li
     return (meridian_list, antimeridian_list)
 
 
-async def set_and_rise(loc, eph, start, end, body, offset_h, offset_m) -> list:
+async def set_and_rise(loc, eph, start, end, body, offset_h, offset_m, f) -> list:
     """
     Calculates rising and setting times for a given
     celestial body as viewed from a location on Earth.
@@ -233,14 +247,12 @@ async def set_and_rise(loc, eph, start, end, body, offset_h, offset_m) -> list:
         hours of offset from utc
     offset_m: int
         minutes of offset from utc
+    
+    f: skyfield almanac.rising_and_settings object
+        Initialized object for finding rising and setting times.
+        Used in this function for checking visibility of an object
     """
     # Find set and rise for a celestial body
-    # Use specially made function if body == Sun
-    # For taking into account atmospheric refraction and sun diameter
-    if body == "Sun":
-        f = almanac.sunrise_sunset(eph, loc)
-    else:
-        f = almanac.risings_and_settings(eph, eph[body], loc)
     t, y = almanac.find_discrete(start, end, f, epsilon=EPS)
     if len(y) > 0:
         astro = (eph["earth"] + loc).at(t).observe(eph[body])
