@@ -6,7 +6,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.responses import HTMLResponse
 from routes.sunrise import router
-from exception_handler import http_exception_handler
+from exception_handler import (http_exception_handler,
+                              unexpected_exception_handler)
 from time import perf_counter
 #################################
 # Setting up logging module     #
@@ -54,19 +55,24 @@ def healthz():
            "Service: Sunrise<br/>"
            "Version: dev<br/>"
            "Responsible: haakont, mateuszmr<br/>"
-           "Depends: api.met.no<br/>"
+           "Depends: k8s.met.no<br/>"
            "Status: Ok<br/>"
            "Description: Application for requesting rising and setting of The Sun and Moon.")
+@app.get("/")
+def home() -> str:
+    return ("This is the Celestial backend for calculating rising and setting of the Sun and Moon! "
+            "Please refer to the /docs endpoint for an OpenAPI spec documenting how to query the API.")
 
 app.add_exception_handler(HTTPException,
                           http_exception_handler)
-
+app.add_exception_handler(Exception,
+                          unexpected_exception_handler)
 
 if __name__ == "__main__":
 
     uvicorn.run("main:app",
                 host='0.0.0.0',
-                port=8080,
+                port=5000,
                 workers=4,
                 reload=True,
                 limit_concurrency=20)

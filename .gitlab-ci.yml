@@ -25,6 +25,7 @@ stages:
     - if: $CI_COMMIT_BRANCH == "master"
     - if: $CI_PIPELINE_SOURCE == "web"
 
+
 sunrise:
   extends: .build
   variables:
