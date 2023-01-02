@@ -59,19 +59,3 @@ def make_response(setting, rising, meridian, antimeridian,
         properties["moonphase"] = {"value": round(moonphase.degrees, 2)}
     response["properties"] = properties
     return (response)
-"""
-def arc_to_deg(input) -> float:
-    """
-    #converts input string on the format
-    #\"xx deg xx' xx"\" to float. I.e converts
-    #arcminutes and arcsedonds to float.
-"""
-
-    float_vals = re.findall(r"\d+(?:\.\d+)?", input)
-    float_vals = (float(float_vals[0])
-                 + float(float_vals[1]) / 60
-                 + float(float_vals[2]) / 3600)
-    if input[0] == "-":
-        float_vals = -float_vals
-    return(round(float_vals, 3))
-"""
