@@ -74,6 +74,13 @@ async def get_sunrise(
         offset_m = -offset_m
     # Offset in solar time. Not "political" Timezone
     delta_offset = - lon / 15
+    # correct for locations on the "wrong" side of the date line
+    if lon > 0 and offset_h < 0:
+        # e.g. Attu (172.9, 52.9, UTC-10)
+        delta_offset += 24
+    elif lon < 0 and offset_h > 0:
+        # e.g. Tonga (-175.2, -21.1, UTC+13)
+        delta_offset -= 24
 
     rising, setting, noon, moonphase, start, end = await calculate_one_day(
         datetime_date,
@@ -114,7 +121,6 @@ async def calculate_one_day(date, ts, eph, loc, offset_h,
 
     # Set start and end time for position with UTC offset
     start = datetime(date.year, date.month, date.day, tzinfo=utc)
-
     start = start + timedelta(hours=delta_offset)
     end = start + timedelta(days=1)
     f_transit = almanac.meridian_transits(eph, eph[body], loc)
@@ -157,7 +163,7 @@ async def calculate_one_day(date, ts, eph, loc, offset_h,
     return (rising, setting, noon, moonphase, start, end)
 
 
-async def meridian_transit(loc, eph, start, end, body, offset_h, offset_m, 
+async def meridian_transit(loc, eph, start, end, body, offset_h, offset_m,
                            f_rising, f_transit) -> list:
     """
     Calculates the time at which a body passes a location meridian,
@@ -247,7 +253,7 @@ async def set_and_rise(loc, eph, start, end, body, offset_h, offset_m, f) -> lis
         hours of offset from utc
     offset_m: int
         minutes of offset from utc
-    
+
     f: skyfield almanac.rising_and_settings object
         Initialized object for finding rising and setting times.
         Used in this function for checking visibility of an object

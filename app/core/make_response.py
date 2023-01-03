@@ -17,9 +17,9 @@ def make_response(setting, rising, meridian, antimeridian,
     #print(delta_offset_string)
     #sign = "-" if delta_offset > 0 else "+"
 
-    response["when"] = {"interval": [start + "+00:00",
-                                     end + "+00:00"]
-                        }          
+    response["when"] = {"interval": [start + ":00Z",
+                                     end + ":00Z"]
+                        }
     properties = {}
     properties["body"] = body
 
