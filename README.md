@@ -13,15 +13,13 @@ This project is currently under development.
 ## Test it out
 ### Prerequisites
 Sunrise is a python application utilizing the fastapi web framework library.
-The application requires python3>=3.6
+The application requires python3>=3.8
 The library requirements are as follows
 - fastapi>=0.73.0
 - numpy>=1.19.5
 - skyfield>=1.43.1
 - uvicorn>=0.16.0
-- pytz>=2021.3
-- lxml>=4.8.0
-- jinja2>=3.0.3
+
 
 These are also listed in the `requirements.txt` file.
 Older versions may work, but are not tested.
@@ -32,7 +30,7 @@ This requires docker-compose. (This is currently only tested on Docker Compose v
 
 
 ## Documentation
-Api spec for the application is generated and can be viewed on the `/v3/docs` endpoint when running this application. Here it is described how to make http requests to the application.
+Api spec for the application is generated and can be viewed on the `/docs` endpoint when running this application. Here it is described how to make http requests to the application.
 For calculating the rising and setting times of the Moon and the Sun, the skyfield library ([https://rhodesmill.org/skyfield/](https://rhodesmill.org/skyfield/)) is used. Please refer to
 its documentation when viewing the code for this application.  
 
