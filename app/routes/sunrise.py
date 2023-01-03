@@ -132,11 +132,11 @@ async def calculate_one_day(date, ts, eph, loc, offset_h,
         # For taking into account atmospheric refraction and sun diameter
         f_rising = almanac.sunrise_sunset(eph, loc)
         noon = await meridian_transit(loc, eph, ts.utc(start), ts.utc(_end),
-                                      "Sun", offset_h, offset_m, f_rising,
+                                      "Sun", f_rising,
                                       f_transit)
 
         # Use solarnoon to set start and end of interval.
-        solarnoon_strptime = datetime.strptime(noon[0][0], TIME_FORMAT)
+        solarnoon_strptime = noon[0][0]
         solarnoon_minus_12h = (solarnoon_strptime
                                - timedelta(hours=12)).replace(tzinfo=utc)
         solarnoon_plus_12_h = (solarnoon_strptime
@@ -151,19 +151,25 @@ async def calculate_one_day(date, ts, eph, loc, offset_h,
         # Add one minute to account for noon occuring at 12:00
         _end = ts.utc(end + timedelta(minutes=1))
         noon = await meridian_transit(loc, eph, _start, _end,
-                                      body, offset_h, offset_m,
+                                      body,
                                       f_rising, f_transit)
         moonphase = almanac.moon_phase(eph, _start)
     else:
         raise HTTPException(status_code=HTTPStatus.BAD_REQUEST,
                             detail=f"Unsopported celestial body \"{body}\" entered.")
 
+    # convert noon to string with queried offset.
+    noon[0][0] = (noon[0][0]
+        + timedelta(hours=offset_h, minutes=offset_m)).strftime(TIME_FORMAT)
+    noon[1][0] = (noon[1][0]
+        + timedelta(hours=offset_h, minutes=offset_m)).strftime(TIME_FORMAT)
+
     rising, setting = await set_and_rise(loc, eph, _start, _end,
                                          body, offset_h, offset_m, f_rising)
     return (rising, setting, noon, moonphase, start, end)
 
 
-async def meridian_transit(loc, eph, start, end, body, offset_h, offset_m,
+async def meridian_transit(loc, eph, start, end, body, 
                            f_rising, f_transit) -> list:
     """
     Calculates the time at which a body passes a location meridian,
@@ -211,22 +217,19 @@ async def meridian_transit(loc, eph, start, end, body, offset_h, offset_m,
     meridian_visible = f_rising(meridian)
     antimeridian_visible = f_rising(antimeridian)
 
-    antimeridian = (antimeridian.utc_datetime()
-                    + timedelta(hours=offset_h, minutes=offset_m))
-    meridian = (meridian.utc_datetime()
-                + timedelta(hours=offset_h, minutes=offset_m))
-    meridian_list = [meridian.strftime(TIME_FORMAT),
+    meridian_list = [meridian.utc_datetime(),
                      alt[meridian_index],
                      distance[meridian_index] * AU_TO_KM,
                      meridian_visible]
-    antimeridian_list = [antimeridian.strftime(TIME_FORMAT),
+    antimeridian_list = [antimeridian.utc_datetime(),
                          alt[antimeridian_index],
                          distance[antimeridian_index] * AU_TO_KM,
                          antimeridian_visible]
     return (meridian_list, antimeridian_list)
 
 
-async def set_and_rise(loc, eph, start, end, body, offset_h, offset_m, f) -> list:
+async def set_and_rise(loc, eph, start, end,
+                       body, offset_h, offset_m, f) -> list:
     """
     Calculates rising and setting times for a given
     celestial body as viewed from a location on Earth.
@@ -269,7 +272,8 @@ async def set_and_rise(loc, eph, start, end, body, offset_h, offset_m, f) -> lis
     else:
         az = [None, None]
     t = t.utc_datetime() + timedelta(hours=offset_h, minutes=offset_m)
-
+    #for i in t:
+        #print(i.strftime(TIME_FORMAT))
     set = [None, None]
     rise = [None, None]
     zip_list = list(zip(t, y, az))
