@@ -19,7 +19,7 @@ The library requirements are as follows
 - numpy>=1.19.5
 - skyfield>=1.43.1
 - uvicorn>=0.16.0
-- jinja2>=3.0.3
+
 
 These are also listed in the `requirements.txt` file.
 Older versions may work, but are not tested.
