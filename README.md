@@ -13,7 +13,7 @@ This project is currently under development.
 ## Test it out
 ### Prerequisites
 Sunrise is a python application utilizing the fastapi web framework library.
-The application requires python3>=3.6
+The application requires python3>=3.8
 The library requirements are as follows
 - fastapi>=0.73.0
 - numpy>=1.19.5
