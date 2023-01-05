@@ -13,11 +13,11 @@ stages:
   script:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker build -t ${REGISTRY_IMAGE}:${CI_COMMIT_TAG} -f ${DOCKERFILE} ${BUILD_CONTEXT_DIR}
-    - docker tag ${REGISTRY_IMAGE}:${CI_COMMIT_SHA} ${REGISTRY_IMAGE}:latest
+    - docker tag ${REGISTRY_IMAGE}:${CI_COMMIT_TAG} ${REGISTRY_IMAGE}:latest
     - docker push ${REGISTRY_IMAGE}:${CI_COMMIT_TAG}
     - docker push ${REGISTRY_IMAGE}:latest
     - mkdir .images
-    - echo "${REGISTRY_IMAGE}:${CI_COMMIT_SHA}" > .images/${CI_JOB_NAME}
+    - echo "${REGISTRY_IMAGE}:${CI_COMMIT_TAG}" > .images/${CI_JOB_NAME}
   artifacts:
     paths:
       - .images/${CI_JOB_NAME}
