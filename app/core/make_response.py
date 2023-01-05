@@ -1,8 +1,6 @@
-import re
-from datetime import datetime, timedelta
 
 def make_response(setting, rising, meridian, antimeridian,
-                  start, end, body, lat, lon, altitude,
+                  start, end, body, lat, lon,
                   moonphase, offset) -> dict:
     response = {}
     response["copyright"] = "MET Norway"
