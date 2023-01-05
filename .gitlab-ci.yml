@@ -12,9 +12,9 @@ stages:
     - k8s-root
   script:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker build -t ${REGISTRY_IMAGE}:${CI_COMMIT_SHA} -f ${DOCKERFILE} ${BUILD_CONTEXT_DIR}
+    - docker build -t ${REGISTRY_IMAGE}:${CI_COMMIT_TAG} -f ${DOCKERFILE} ${BUILD_CONTEXT_DIR}
     - docker tag ${REGISTRY_IMAGE}:${CI_COMMIT_SHA} ${REGISTRY_IMAGE}:latest
-    - docker push ${REGISTRY_IMAGE}:${CI_COMMIT_SHA}
+    - docker push ${REGISTRY_IMAGE}:${CI_COMMIT_TAG}
     - docker push ${REGISTRY_IMAGE}:latest
     - mkdir .images
     - echo "${REGISTRY_IMAGE}:${CI_COMMIT_SHA}" > .images/${CI_JOB_NAME}
@@ -22,8 +22,7 @@ stages:
     paths:
       - .images/${CI_JOB_NAME}
   rules: &buildrules
-    - if: $CI_COMMIT_BRANCH == "main"
-    - if: $CI_PIPELINE_SOURCE == "web"
+    - if: '$CI_COMMIT_TAG =~ /^v[0-9]/'
 
 
 sunrise:
