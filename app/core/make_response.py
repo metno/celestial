@@ -10,7 +10,7 @@ def make_response(setting, rising, meridian, antimeridian,
 
     response["type"] = "Feature"
     response["geometry"] = {"type": "Point",
-                            "coordinates": [lon, lat, altitude]}
+                            "coordinates": [lon, lat]} # removed altitude
 
     response["when"] = {"interval": [start + ":00Z",
                                      end + ":00Z"]
