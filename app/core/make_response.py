@@ -11,11 +11,6 @@ def make_response(setting, rising, meridian, antimeridian,
     response["type"] = "Feature"
     response["geometry"] = {"type": "Point",
                             "coordinates": [lon, lat, altitude]}
-    #print(delta_offset)
-    #delta_offset_string = datetime.fromtimestamp(3600 * delta_offset).strftime("%H:%M")
-    #delta_offset_string = str(timedelta(hours=delta_offset))
-    #print(delta_offset_string)
-    #sign = "-" if delta_offset > 0 else "+"
 
     response["when"] = {"interval": [start + ":00Z",
                                      end + ":00Z"]
@@ -45,15 +40,13 @@ def make_response(setting, rising, meridian, antimeridian,
     properties[events[0]] = {
                              "time": meridian[0] + offset,
                              "disc_centre_elevation": round(meridian[1], 2),
-                             "distance": round(float(meridian[2]), 2),
-                             "visible": str(meridian[3]) == "True"
+                             "visible": str(meridian[2]) == "True"
                              }
 
     properties[events[1]] = {
                              "time": antimeridian[0] + offset,
                              "disc_centre_elevation": round(antimeridian[1], 2),
-                             "distance": round(float(antimeridian[2]), 2),
-                             "visible": str(antimeridian[3]) == "True"
+                             "visible": str(antimeridian[2]) == "True"
                              }
     if moonphase:
         properties["moonphase"] = {"value": round(moonphase.degrees, 2)}

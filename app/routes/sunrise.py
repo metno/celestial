@@ -205,8 +205,7 @@ async def meridian_transit(loc, eph, start, end, body,
     times, events = almanac.find_discrete(start, end, f_transit, epsilon=EPS)
     astro = (eph["earth"] + loc).at(times).observe(eph[body])
     app = astro.apparent()
-    alt, az, distance = app.altaz()
-    distance = distance.au
+    alt = app.altaz()[0]
     alt = alt.degrees
     antimeridian = times[events == 0][0]
     meridian = times[events == 1][0]
@@ -219,11 +218,9 @@ async def meridian_transit(loc, eph, start, end, body,
 
     meridian_list = [meridian.utc_datetime(),
                      alt[meridian_index],
-                     distance[meridian_index] * AU_TO_KM,
                      meridian_visible]
     antimeridian_list = [antimeridian.utc_datetime(),
                          alt[antimeridian_index],
-                         distance[antimeridian_index] * AU_TO_KM,
                          antimeridian_visible]
     return (meridian_list, antimeridian_list)
 
@@ -266,14 +263,12 @@ async def set_and_rise(loc, eph, start, end,
     if len(y) > 0:
         astro = (eph["earth"] + loc).at(t).observe(eph[body])
         app = astro.apparent()
-        alt, az, distance = app.altaz()
-        distance = distance.au
+        az = app.altaz()[1]
         az = az.degrees
     else:
         az = [None, None]
     t = t.utc_datetime() + timedelta(hours=offset_h, minutes=offset_m)
-    #for i in t:
-        #print(i.strftime(TIME_FORMAT))
+
     set = [None, None]
     rise = [None, None]
     zip_list = list(zip(t, y, az))
