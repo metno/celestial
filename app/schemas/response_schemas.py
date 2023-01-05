@@ -14,7 +14,7 @@ class rise_set(BaseModel):
 
 class noon(BaseModel):
     time: str
-    altitude: float
+    disc_centre_elevation: float
     #distance: float
     visible: bool
 
