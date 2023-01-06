@@ -1,4 +1,4 @@
-# What is Sunrise?
+# What is Celestial?
 Sunrise is a small application for calculating the astronomical phenomena such the rising and setting of The Sun and The Moon.
 The purpose of this application is to serve as an endpoint for the sunrise 3.0 endpoint at api.met.no.
 
