@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.responses import HTMLResponse
 from routes.sunrise import router
+from starlette_prometheus import metrics, PrometheusMiddleware
 from exception_handler import (http_exception_handler,
                               unexpected_exception_handler)
 from time import perf_counter
@@ -29,10 +30,15 @@ app.add_middleware(
         allow_methods=["*"],
         allow_headers=["*"])
 
+app.add_middleware(PrometheusMiddleware)
+app.add_route("/metrics/", metrics)
 logger = logging.getLogger("uvicorn.access")
 
 @app.on_event("startup")
 async def startup_event():
+    """
+    Set logging format
+    """
     console_formatter = uvicorn.logging.ColourizedFormatter(
         "{levelprefix} ({asctime}) : {message}","%Y-%m-%d %H:%M:%S",
         style="{", use_colors=True,
@@ -58,6 +64,7 @@ def healthz():
            "Depends: k8s.met.no<br/>"
            "Status: Ok<br/>"
            "Description: Application for requesting rising and setting of The Sun and Moon.")
+
 @app.get("/")
 def home() -> str:
     return ("This is the Celestial backend for calculating rising and setting of the Sun and Moon! "
