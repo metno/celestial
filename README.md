@@ -1,6 +1,6 @@
 # What is Sunrise?
 Sunrise is a small application for calculating the astronomical phenomena such the rising and setting of The Sun and The Moon.
-The purpose of this project is to provide an endpoint for delivering information of said phenomenas to end users such as yr.no.
+The purpose of this application is to serve as an endpoint for the sunrise 3.0 endpoint at api.met.no.
 
 ## Who is responsible?
 Responsible for this repository is Håkon Tansem (haakont@met.no)
