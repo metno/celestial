@@ -1,5 +1,5 @@
 # What is Celestial?
-Sunrise is a small application for calculating the astronomical phenomena such the rising and setting of The Sun and The Moon.
+Celestial is a small application for calculating the astronomical phenomena such the rising and setting of The Sun and The Moon.
 The purpose of this application is to serve as an endpoint for the sunrise 3.0 endpoint at api.met.no.
 
 ## Who is responsible?
@@ -12,7 +12,7 @@ This project is currently under development.
 
 ## Test it out
 ### Prerequisites
-Sunrise is a python application utilizing the fastapi web framework library.
+Celestial is a python application utilizing the fastapi web framework library.
 The application requires python3>=3.8
 The library requirements are as follows
 - fastapi>=0.73.0
