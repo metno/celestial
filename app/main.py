@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.responses import HTMLResponse
 from routes.sunrise import router
-from starlette_prometheus import metrics, PrometheusMiddleware
+from prometheus_fastapi_instrumentator import Instrumentator
 from exception_handler import (http_exception_handler,
                               unexpected_exception_handler)
 from time import perf_counter
@@ -30,9 +30,12 @@ app.add_middleware(
         allow_methods=["*"],
         allow_headers=["*"])
 
-app.add_middleware(PrometheusMiddleware)
-app.add_route("/metrics/", metrics)
+
 logger = logging.getLogger("uvicorn.access")
+
+@app.on_event("startup")
+async def startup():
+    Instrumentator().instrument(app).expose(app)
 
 @app.on_event("startup")
 async def startup_event():
