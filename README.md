@@ -6,7 +6,7 @@ The purpose of this application is to serve as an endpoint for the sunrise 3.0 e
 Responsible for this repository is Håkon Tansem (haakont@met.no)
 
 ## Status
-This project is currently under development.
+This project is currently in beta phase.
 
 # Getting started
 
