@@ -138,7 +138,7 @@ async def calculate_one_day(date, ts, eph, loc, offset_h,
                                - timedelta(hours=12)).replace(tzinfo=utc)
         solarnoon_plus_12_h = (solarnoon_strptime
                                + timedelta(hours=12)).replace(tzinfo=utc)
-        
+        a=1
         start = min(start, solarnoon_minus_12h)
         end = max(end, solarnoon_plus_12_h)
         moonphase = None
