@@ -138,30 +138,33 @@ async def calculate_one_day(date, ts, eph, loc, offset_h,
                                - timedelta(hours=12)).replace(tzinfo=utc)
         solarnoon_plus_12_h = (solarnoon_strptime
                                + timedelta(hours=12)).replace(tzinfo=utc)
-
-        _start = ts.utc(min(start, solarnoon_minus_12h))
-        _end = ts.utc(max(end, solarnoon_plus_12_h))
+        
+        start = min(start, solarnoon_minus_12h)
+        end = max(end, solarnoon_plus_12_h)
         moonphase = None
     elif body == "Moon":
         f_rising = almanac.risings_and_settings(eph, eph[body], loc)
-        _start = ts.utc(start)
         # Add one minute to account for noon occuring at 12:00
-        _end = ts.utc(end + timedelta(minutes=1))
-        noon = await meridian_transit(loc, eph, _start, _end,
+        _end = end + timedelta(minutes=1)
+        noon = await meridian_transit(loc, eph, ts.utc(start), ts.utc(_end),
                                       body,
                                       f_rising, f_transit)
-        moonphase = almanac.moon_phase(eph, _start)
+        moonphase = almanac.moon_phase(eph, ts.utc(start))
     else:
         raise HTTPException(status_code=HTTPStatus.BAD_REQUEST,
                             detail=f"Unsopported celestial body \"{body}\" entered.")
 
     # convert noon to string with queried offset.
-    noon[0][0] = (noon[0][0]
-        + timedelta(hours=offset_h, minutes=offset_m)).strftime(TIME_FORMAT)
-    noon[1][0] = (noon[1][0]
-        + timedelta(hours=offset_h, minutes=offset_m)).strftime(TIME_FORMAT)
+    noon[0][0] = ((noon[0][0]
+        + timedelta(hours=offset_h,
+                    minutes=offset_m)).strftime(TIME_FORMAT)
+                        if noon[0][0] is not None else None)
+    noon[1][0] = ((noon[1][0]
+        + timedelta(hours=offset_h,
+                    minutes=offset_m)).strftime(TIME_FORMAT)
+                        if noon[1][0] is not None else None)
 
-    rising, setting = await set_and_rise(loc, eph, _start, _end,
+    rising, setting = await set_and_rise(loc, eph, ts.utc(start), ts.utc(end),
                                          body, offset_h, offset_m, f_rising)
     return (rising, setting, noon, moonphase, start, end)
 
@@ -204,21 +207,27 @@ async def meridian_transit(loc, eph, start, end, body,
     app = astro.apparent()
     alt = app.altaz()[0]
     alt = alt.degrees
-    antimeridian = times[events == 0][0]
-    meridian = times[events == 1][0]
-    meridian_index = where(events == 1)[0][0]
-    antimeridian_index = where(events == 0)[0][0]
-
-    # Check if body is visible to inform about polar day and night
-    meridian_visible = f_rising(meridian)
-    antimeridian_visible = f_rising(antimeridian)
-
-    meridian_list = [meridian.utc_datetime(),
-                     alt[meridian_index],
-                     meridian_visible]
-    antimeridian_list = [antimeridian.utc_datetime(),
-                         alt[antimeridian_index],
-                         antimeridian_visible]
+    try:
+        antimeridian = times[events == 0][0]
+        antimeridian_index = where(events == 0)[0][0]
+        # Check if body is visible to inform about polar day and night
+        antimeridian_visible = f_rising(antimeridian)
+        antimeridian_list = [antimeridian.utc_datetime(),
+                            alt[antimeridian_index],
+                            antimeridian_visible]
+    except IndexError:
+        # Special case where no antimeridian crossing events are found 
+        antimeridian_list = [None, None, None]
+    try:
+        meridian = times[events == 1][0]
+        meridian_index = where(events == 1)[0][0]
+        meridian_visible = f_rising(meridian)
+        meridian_list = [meridian.utc_datetime(),
+                        alt[meridian_index],
+                        meridian_visible]
+    except IndexError:
+        # Special case where no meridian crossing events are found
+        meridian_list = [None, None, None]
     return (meridian_list, antimeridian_list)
 
 
