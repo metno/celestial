@@ -1,12 +1,12 @@
 # What is Celestial?
 Celestial is a small application for calculating the astronomical phenomena such the rising and setting of The Sun and The Moon.
-The purpose of this application is to serve as an endpoint for the sunrise 3.0 endpoint at api.met.no.
+The purpose of this application is to serve as an endpoint for the sunrise 3.0 endpoint at api.met.no. (https://api.met.no/weatherapi/sunrise/3.0/documentation)
 
 ## Who is responsible?
 Responsible for this repository is Håkon Tansem (haakont@met.no)
 
 ## Status
-This project is currently under development.
+This project is currently in beta phase.
 
 # Getting started
 
