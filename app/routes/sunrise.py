@@ -206,27 +206,31 @@ async def meridian_transit(loc, eph, start, end, body,
     app = astro.apparent()
     alt = app.altaz()[0]
     alt = alt.degrees
+
     try:
         antimeridian = times[events == 0][0]
+    except IndexError:
+        # Special case where no antimeridian crossing events are found 
+        antimeridian_list = [None, None, None]
+    else:
         antimeridian_index = where(events == 0)[0][0]
         # Check if body is visible to inform about polar day and night
         antimeridian_visible = f_rising(antimeridian)
         antimeridian_list = [antimeridian.utc_datetime(),
                             alt[antimeridian_index],
                             antimeridian_visible]
-    except IndexError:
-        # Special case where no antimeridian crossing events are found 
-        antimeridian_list = [None, None, None]
     try:
         meridian = times[events == 1][0]
+    except IndexError:
+        # Special case where no meridian crossing events are found
+        meridian_list = [None, None, None]
+    else:
         meridian_index = where(events == 1)[0][0]
         meridian_visible = f_rising(meridian)
         meridian_list = [meridian.utc_datetime(),
                         alt[meridian_index],
                         meridian_visible]
-    except IndexError:
-        # Special case where no meridian crossing events are found
-        meridian_list = [None, None, None]
+
     return (meridian_list, antimeridian_list)
 
 
