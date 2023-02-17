@@ -35,17 +35,30 @@ def make_response(setting, rising, meridian, antimeridian,
     elif body == "Moon":
         events = ["high_moon", "low_moon"]
 
-    properties[events[0]] = {
-                             "time": meridian[0] + offset,
-                             "disc_centre_elevation": round(meridian[1], 2),
-                             "visible": str(meridian[2]) == "True"
-                             }
-
-    properties[events[1]] = {
-                             "time": antimeridian[0] + offset,
-                             "disc_centre_elevation": round(antimeridian[1], 2),
-                             "visible": str(antimeridian[2]) == "True"
-                             }
+    if meridian[0] is not None:
+        properties[events[0]] = {
+                                 "time": meridian[0] + offset,
+                                 "disc_centre_elevation": round(meridian[1], 2),
+                                 "visible": str(meridian[2]) == "True"
+                                 }
+    else:
+        properties[events[0]] = {
+                                 "time": None,
+                                 "disc_centre_elevation": None,
+                                 "visible": None
+                                 }
+    if antimeridian[0] is not None:
+        properties[events[1]] = {
+                                 "time": antimeridian[0] + offset,
+                                 "disc_centre_elevation": round(antimeridian[1], 2),
+                                 "visible": str(antimeridian[2]) == "True"
+                                 }
+    else:
+        properties[events[1]] = {
+                                 "time": None,
+                                 "disc_centre_elevation": None,
+                                 "visible": None
+                                 }
     if moonphase:
         properties["moonphase"] = {"value": round(moonphase.degrees, 2)}
     response["properties"] = properties
