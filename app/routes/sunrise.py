@@ -72,10 +72,10 @@ async def get_sunrise(
     # Offset in solar time. Not "political" Timezone
     delta_offset = - lon / 15
     # correct for locations on the "wrong" side of the date line
-    if lon > 0 and offset_h < 0:
+    if lon > 100 and offset_h < 0:
         # e.g. Attu (172.9, 52.9, UTC-10)
         delta_offset += 24
-    elif lon < 0 and offset_h > 0:
+    elif lon < -100 and offset_h > 0:
         # e.g. Tonga (-175.2, -21.1, UTC+13)
         delta_offset -= 24
 
@@ -120,6 +120,7 @@ async def calculate_one_day(date, ts, eph, loc, offset_h,
     start = datetime(date.year, date.month, date.day, tzinfo=utc)
     start = start + timedelta(hours=delta_offset)
     end = start + timedelta(days=1)
+    
     f_transit = almanac.meridian_transits(eph, eph[body], loc)
     if body == "Sun":
         # Add one minute to account for noon occuring at 12:00
