@@ -14,7 +14,7 @@ from core.make_response import make_response
 
 EPS = 0.0001
 TIME_FORMAT = "%Y-%m-%dT%H:%M"
-ATMOSPHERE_REFRAC = -0.5666 # Average angle in which atmospheric refraction moves the horizon
+ATMOSPHERE_REFRAC = 0.5666 # Average angle in which atmospheric refraction moves the horizon
 MOON_RADIUS_DEGREES = 0.2667 # Roughly stimated average Moon radius in degrees 
 
 router = APIRouter()
