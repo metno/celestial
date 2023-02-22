@@ -60,6 +60,6 @@ def make_response(setting, rising, meridian, antimeridian,
                                  "visible": None
                                  }
     if moonphase:
-        properties["moonphase"] = {"value": round(moonphase.degrees, 2)}
+        properties["moonphase"] = round(moonphase.degrees, 2)
     response["properties"] = properties
     return (response)

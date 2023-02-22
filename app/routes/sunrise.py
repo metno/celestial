@@ -61,7 +61,6 @@ async def get_sunrise(
                                    "The date parameter has to be on the form +/-HH:MM",
                             status_code=HTTPStatus.BAD_REQUEST)
     datetime_date = datetime.strptime(date, "%Y-%m-%d")
-    print(datetime_date)
     ts = api.load.timescale()
     # eph = init_eph()
     global eph
