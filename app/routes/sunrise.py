@@ -14,6 +14,8 @@ from core.make_response import make_response
 
 EPS = 0.0001
 TIME_FORMAT = "%Y-%m-%dT%H:%M"
+ATMOSPHERE_REFRAC = -0.5666 # Average angle in which atmospheric refraction moves the horizon
+MOON_RADIUS_DEGREES = 0.2667 # Roughly stimated average Moon radius in degrees 
 
 router = APIRouter()
 eph = init_eph()
@@ -59,6 +61,7 @@ async def get_sunrise(
                                    "The date parameter has to be on the form +/-HH:MM",
                             status_code=HTTPStatus.BAD_REQUEST)
     datetime_date = datetime.strptime(date, "%Y-%m-%d")
+    print(datetime_date)
     ts = api.load.timescale()
     # eph = init_eph()
     global eph
@@ -143,7 +146,11 @@ async def calculate_one_day(date, ts, eph, loc, offset_h,
         end = max(end, solarnoon_plus_12_h)
         moonphase = None
     elif body == "Moon":
-        f_rising = almanac.risings_and_settings(eph, eph[body], loc)
+        f_rising = almanac.risings_and_settings(
+            eph, eph[body], loc,
+            horizon_degrees=ATMOSPHERE_REFRAC,
+            radius_degrees=MOON_RADIUS_DEGREES
+        )
         # Add one minute to account for noon occuring at 12:00
         _end = end + timedelta(minutes=1)
         noon = await meridian_transit(loc, eph, ts.utc(start), ts.utc(_end),
