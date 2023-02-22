@@ -147,7 +147,7 @@ async def calculate_one_day(date, ts, eph, loc, offset_h,
     elif body == "Moon":
         f_rising = almanac.risings_and_settings(
             eph, eph[body], loc,
-            horizon_degrees=ATMOSPHERE_REFRAC,
+            horizon_degrees=-ATMOSPHERE_REFRAC,
             radius_degrees=MOON_RADIUS_DEGREES
         )
         # Add one minute to account for noon occuring at 12:00
