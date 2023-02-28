@@ -21,6 +21,7 @@ This project is currently in beta phase.
 
 Celestial is a python application utilizing the fastapi web framework library.
 The application requires python3>=3.8
+For the docker image specified in the compose file, Python 3.11 is used.
 The library requirements are as follows
 
 - fastapi>=0.73.0
@@ -34,7 +35,7 @@ Older versions may work, but are not tested.
 #### Running with docker
 
 In order to run the application, type `docker-compose up`.
-This requires docker-compose. (This is currently only tested on Docker Compose version v2.6.1). If you have trouble with python 3.12, use 3.10.
+This requires docker-compose. (This is currently only tested on Docker Compose version v2.6.1).
 
 ### Documentation
 
