@@ -1,0 +1,12 @@
+fastapi>=0.73.0
+numpy>=1.19.5
+skyfield>=1.43.1
+uvicorn>=0.16.0
+prometheus-fastapi-instrumentator>=5.9.1
+
+httpx
+python-dateutil
+tox
+requests
+timezonefinder
+colorama

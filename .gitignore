@@ -1,0 +1,7 @@
+venv
+*.tar
+de440s.bsp
+__pycache__
+.vscode
+.tox
+app/testdata
