@@ -24,10 +24,11 @@ The application requires python3>=3.8
 For the docker image specified in the compose file, Python 3.11 is used.
 The library requirements are as follows
 
-- fastapi>=0.73.0
+- fastapi==0.90.1
 - numpy>=1.19.5
 - skyfield>=1.43.1
 - uvicorn>=0.16.0
+- prometheus-fastapi-instrumentator>=5.9.1
 
 These are also listed in the `requirements.txt` file.
 Older versions may work, but are not tested.
@@ -49,7 +50,6 @@ If you want to contribute to this project, please create a fork or a branch and 
 You can also contact Håkon Tansem (haakont@met.no) directly if you have proposed changes for this project.
 This code utilises python with fastapi as the web framework library. For more information on fastapi check out this [link](https://fastapi.tiangolo.com/).
 The main engine for calculating the astronomical phenomena is through the skyfield library for Python. Check out the documentation [here](https://rhodesmill.org/skyfield/) or the subsequent github [repository](https://github.com/skyfielders/python-skyfield).
-For work on this project, the following "arbeidsordre" is used: Sunrise (157160303).
 
 ### Tests
 
