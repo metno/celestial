@@ -131,7 +131,10 @@ async def calculate_one_day(date, ts, eph, loc, offset_h,
         # Use specially made function if body == Sun
         # For taking into account atmospheric refraction and sun diameter
         f_rising = almanac.sunrise_sunset(eph, loc)
-        noon = await meridian_transit(loc, eph, ts.utc(start), ts.utc(_end),
+        noon = await meridian_transit(loc,
+                                      eph,
+                                      ts.utc(start - timedelta(hours=6)), # Catch the solarmidnight that happens before the requested day
+                                      ts.utc(_end - timedelta(hours=6)),
                                       "Sun", f_rising,
                                       f_transit)
 

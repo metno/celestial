@@ -1,5 +1,5 @@
 fastapi==0.90.1
 numpy>=1.19.5
 skyfield>=1.43.1
-uvicorn>=0.16.0
+uvicorn[standard]
 prometheus-fastapi-instrumentator>=5.9.1
