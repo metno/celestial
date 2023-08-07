@@ -153,6 +153,7 @@ async def calculate_one_day(date, ts, eph, loc, offset_h,
             horizon_degrees=-ATMOSPHERE_REFRAC,
             radius_degrees=MOON_RADIUS_DEGREES
         )
+        f_rising.step_days = 0.04
         # Add one minute to account for noon occuring at 12:00
         _end = end + timedelta(minutes=1)
         noon = await meridian_transit(loc, eph, ts.utc(start), ts.utc(_end),
@@ -172,7 +173,6 @@ async def calculate_one_day(date, ts, eph, loc, offset_h,
         + timedelta(hours=offset_h,
                     minutes=offset_m)).strftime(TIME_FORMAT)
                         if noon[1][0] is not None else None)
-
     rising, setting = await set_and_rise(loc, eph, ts.utc(start), ts.utc(end),
                                          body, offset_h, offset_m, f_rising)
     return (rising, setting, noon, moonphase, start, end)
@@ -279,6 +279,7 @@ async def set_and_rise(loc, eph, start, end,
     """
     # Find set and rise for a celestial body
     t, y = almanac.find_discrete(start, end, f, epsilon=EPS)
+
     if len(y) > 0:
         astro = (eph["earth"] + loc).at(t).observe(eph[body])
         app = astro.apparent()
