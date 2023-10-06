@@ -11,8 +11,8 @@ Responsible for this repository is Håkon Tansem (haakont@met.no)
 
 ### Status
 
-This project is currently in beta phase.
-
+This product is operational. It serves as a backend for the sunrise 3.0 product on api.met.no.
+(see https://api.met.no/weatherapi/sunrise/3.0/documentation)
 ## Getting started
 
 ### Test it out
