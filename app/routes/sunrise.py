@@ -60,7 +60,11 @@ async def get_sunrise(
         raise HTTPException(detail="Invalid format for offset parameter entered. "
                                    "The date parameter has to be on the form +/-HH:MM",
                             status_code=HTTPStatus.BAD_REQUEST)
-    datetime_date = datetime.strptime(date, "%Y-%m-%d")
+    try:
+        datetime_date = datetime.strptime(date, "%Y-%m-%d")
+    except ValueError:
+        raise HTTPException(detail=f"The day of the requested date {date} is out of range for the requested month.",
+                            status_code=HTTPStatus.BAD_REQUEST)
     ts = api.load.timescale()
     # eph = init_eph()
     global eph

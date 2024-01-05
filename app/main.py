@@ -78,12 +78,16 @@ app.add_exception_handler(HTTPException,
 app.add_exception_handler(Exception,
                           unexpected_exception_handler)
 
-if __name__ == "__main__":
 
-    uvicorn.run("main:app",
-                host='0.0.0.0',
-                port=5000,
-                workers=4,
-                reload=True,
-                limit_concurrency=20)
+#  Remove comments on these lines if you want to run the application directly
+#  without building and running a docker image.
+
+#if __name__ == "__main__":
+#
+#    uvicorn.run("main:app",
+#                host='0.0.0.0',
+#                port=5000,
+#                workers=4,
+#                reload=True,
+#                limit_concurrency=20)
 
