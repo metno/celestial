@@ -1,4 +1,8 @@
-FROM python:3.11
+FROM registry.met.no/baseimg/ubuntu:22.04
+
+RUN apt-get update -y && \
+    apt-get install -y python3-pip python3-dev python3
+
 
 COPY requirements.txt /app/requirements.txt
 
