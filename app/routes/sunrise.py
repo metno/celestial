@@ -9,7 +9,7 @@ from skyfield import api
 from skyfield.api import utc
 from skyfield import almanac
 from http import HTTPStatus
-from routes.initialize import init_eph
+from core.initialize import init_eph
 from core.make_response import make_response
 
 EPS = 0.0001
@@ -66,6 +66,7 @@ async def get_sunrise(
         raise HTTPException(detail=f"The day of the requested date {date} is out of range for the requested month.",
                             status_code=HTTPStatus.BAD_REQUEST)
     ts = api.load.timescale()
+
     # eph = init_eph()
     global eph
     loc = api.wgs84.latlon(lat, lon)
