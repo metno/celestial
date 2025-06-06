@@ -2,19 +2,19 @@
 
 import uvicorn
 import logging
+import colorlog
+import os
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi import FastAPI, HTTPException, Request, Response
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from routes.sunrise import router
-from prometheus_fastapi_instrumentator import Instrumentator
 from exception_handler import (http_exception_handler,
                               unexpected_exception_handler)
 from time import perf_counter
-#################################
-# Setting up logging module     #
-#################################
-import logging
+from core.initialize import configure_logging
 
+
+logger = configure_logging()
 app = FastAPI(openapi_url="/openapi.json",
               docs_url="/docs")
 
@@ -31,30 +31,13 @@ app.add_middleware(
         allow_headers=["*"])
 
 
-logger = logging.getLogger("uvicorn.access")
-
-@app.on_event("startup")
-async def startup():
-    Instrumentator().instrument(app).expose(app)
-
-@app.on_event("startup")
-async def startup_event():
-    """
-    Set logging format
-    """
-    console_formatter = uvicorn.logging.ColourizedFormatter(
-        "{levelprefix} ({asctime}) : {message}","%Y-%m-%d %H:%M:%S",
-        style="{", use_colors=True,
-        )
-    logger.handlers[0].setFormatter(console_formatter)
-
 @app.middleware("http")
 async def add_process_time_header(request: Request,
                                   call_next):
     start_time = perf_counter()
     response = await call_next(request)
     process_time = perf_counter() - start_time
-    logger.info(f"response-time: {round(process_time, 4)}s")
+    logger.info(f"Request: {request.method} {request.url} with status code {response.status_code} completed in {process_time:.4f} seconds")
     return(response)
 
 @app.get("/healthz",
@@ -82,12 +65,13 @@ app.add_exception_handler(Exception,
 #  Remove comments on these lines if you want to run the application directly
 #  without building and running a docker image.
 
-#if __name__ == "__main__":
-#
-#    uvicorn.run("main:app",
-#                host='0.0.0.0',
-#                port=5000,
-#                workers=4,
-#                reload=True,
-#                limit_concurrency=20)
+if __name__ == "__main__":
+
+    uvicorn.run("main:app",
+                host='0.0.0.0',
+                port=5000,
+                workers=4,
+                reload=True,
+                access_log=False,
+                limit_concurrency=20)
 

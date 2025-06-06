@@ -6,7 +6,7 @@ headers = {"Access-Control-Allow-Origin": "*",
            "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS, HEAD",
            "Access-Control-Allow-Headers": "X-Requested-With, access-control-allow-origin, Content-Type, Accept, authorization"}
 
-logger = logging.getLogger("uvicorn.access")
+logger = logging.getLogger("celestial")
 
 async def http_exception_handler(request, exc):
     """
@@ -20,7 +20,7 @@ async def http_exception_handler(request, exc):
                         status_code=exc.status_code))
 
 async def unexpected_exception_handler(request, exc):
-    logger.info(f"Call to endpoint {request.url.path} "
+    logger.critical(f"Call to endpoint {request.url} failed with and unexpected exception. "
                  f"Error message: {str(exc)}")
     return(JSONResponse(content=f"Call to endpoint {request.url.path} failed with an "
                         "internal error.",
