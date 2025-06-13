@@ -4,9 +4,7 @@ from main import app
 from http import HTTPStatus
 from dateutil import parser
 import unittest
-import requests
-import os
-import json
+
 
 client = TestClient(app)
 

@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
 
 import uvicorn
-import logging
-import colorlog
-import os
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse
@@ -65,13 +62,13 @@ app.add_exception_handler(Exception,
 #  Remove comments on these lines if you want to run the application directly
 #  without building and running a docker image.
 
-if __name__ == "__main__":
-
-    uvicorn.run("main:app",
-                host='0.0.0.0',
-                port=5000,
-                workers=4,
-                reload=True,
-                access_log=False,
-                limit_concurrency=20)
+#if __name__ == "__main__":
+#
+#    uvicorn.run("main:app",
+#                host='0.0.0.0',
+#                port=5000,
+#                workers=4,
+#                reload=True,
+#                access_log=False,
+#                limit_concurrency=20)
 

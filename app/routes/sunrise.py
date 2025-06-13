@@ -1,5 +1,4 @@
 import re
-import schemas.response_schemas as response_schemas
 from datetime import datetime, timedelta
 from enum import Enum
 from fastapi import APIRouter, HTTPException, Query, Path
@@ -10,7 +9,7 @@ from skyfield.api import utc
 from skyfield import almanac
 from http import HTTPStatus
 from core.initialize import init_eph
-from core.make_response import make_response
+from core.make_response import make_response, ResponseModel
 
 EPS = 0.0001
 TIME_FORMAT = "%Y-%m-%dT%H:%M"
@@ -26,8 +25,7 @@ class bodies(str, Enum):
     sun: str = "sun"
 
 
-@router.get("/events/{body}",
-            responses={200: {"model": response_schemas.events}})
+@router.get("/events/{body}")
 async def get_sunrise(
     body: bodies = Path(..., description="Celestial body for which to query for events"),
     date: str = Query(...,
@@ -39,7 +37,7 @@ async def get_sunrise(
                        description="longitude in degrees. Default value set to Greenwich observatory."),
     offset: Optional[str] = Query(default="+00:00",
                                   description="Offset from utc time. Has to be on format +/-HH:MM"),
-                       ) -> dict:
+                       ) -> ResponseModel:
     """
     Returns moonrise and sunset for a given
     date and position in (lat,lon) with optional height
