@@ -43,7 +43,7 @@ def healthz():
     return("System: Sunrise<br/>"
            "Service: Sunrise<br/>"
            "Version: dev<br/>"
-           "Responsible: haakont, mateuszmr<br/>"
+           "Responsible: haakont<br/>"
            "Depends: k8s.met.no<br/>"
            "Status: Ok<br/>"
            "Description: Application for requesting rising and setting of The Sun and Moon.")
